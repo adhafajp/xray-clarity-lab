@@ -1,0 +1,25 @@
+Skenario,Citra,Metode,PSNR (dB),SSIM,MSE,Waktu (ms)
+Gaussian (sigma=20),sample_xray_local_opacity.png,Citra Berderau,22.682,0.2237,350.6555,0.0
+Gaussian (sigma=20),sample_xray_local_opacity.png,Median Filter,33.5235,0.8215,28.8887,4.57
+Gaussian (sigma=20),sample_xray_local_opacity.png,Bilateral Filter,35.5832,0.9287,17.979,5.836
+Gaussian (sigma=20),sample_xray_local_opacity.png,CLAHE,15.0423,0.0996,2036.3357,0.73
+Gaussian (sigma=20),sample_xray_low_contrast.png,Citra Berderau,22.2508,0.191,387.2588,0.0
+Gaussian (sigma=20),sample_xray_low_contrast.png,Median Filter,33.7224,0.8227,27.5959,1.925
+Gaussian (sigma=20),sample_xray_low_contrast.png,Bilateral Filter,36.3162,0.923,15.1867,4.165
+Gaussian (sigma=20),sample_xray_low_contrast.png,CLAHE,13.6029,0.0777,2836.5765,0.514
+Gaussian (sigma=20),sample_xray_normal_contrast.png,Citra Berderau,22.6877,0.2259,350.1931,0.0
+Gaussian (sigma=20),sample_xray_normal_contrast.png,Median Filter,33.4981,0.8221,29.0581,1.801
+Gaussian (sigma=20),sample_xray_normal_contrast.png,Bilateral Filter,35.454,0.929,18.5215,3.916
+Gaussian (sigma=20),sample_xray_normal_contrast.png,CLAHE,15.0575,0.1023,2029.2159,0.499
+Salt-and-Pepper (5%),sample_xray_local_opacity.png,Citra Berderau,17.5794,0.2523,1135.3657,0.0
+Salt-and-Pepper (5%),sample_xray_local_opacity.png,Median Filter,49.2093,0.9988,0.7801,1.801
+Salt-and-Pepper (5%),sample_xray_local_opacity.png,Bilateral Filter,20.8446,0.4988,535.3281,4.062
+Salt-and-Pepper (5%),sample_xray_local_opacity.png,CLAHE,17.291,0.2579,1213.3344,0.63
+Salt-and-Pepper (5%),sample_xray_low_contrast.png,Citra Berderau,17.931,0.2306,1047.0817,0.0
+Salt-and-Pepper (5%),sample_xray_low_contrast.png,Median Filter,51.8066,0.9991,0.429,1.965
+Salt-and-Pepper (5%),sample_xray_low_contrast.png,Bilateral Filter,22.3824,0.5324,375.7031,4.372
+Salt-and-Pepper (5%),sample_xray_low_contrast.png,CLAHE,17.5273,0.2379,1149.0846,0.652
+Salt-and-Pepper (5%),sample_xray_normal_contrast.png,Citra Berderau,17.524,0.255,1149.9487,0.0
+Salt-and-Pepper (5%),sample_xray_normal_contrast.png,Median Filter,48.7231,0.9988,0.8725,1.785
+Salt-and-Pepper (5%),sample_xray_normal_contrast.png,Bilateral Filter,20.6782,0.4874,556.2365,4.156
+Salt-and-Pepper (5%),sample_xray_normal_contrast.png,CLAHE,17.2812,0.2596,1216.0706,0.653
