@@ -35,6 +35,7 @@ PALETTES = {
         "accent": "#5947d9", "accent2": "#7c67ed", "sidebar": "#302a64",
         "sidebar2": "#211c4e", "chart": "#ffffff", "grid": "#e8e6f1",
         "green": "#18aa8c", "amber": "#efa44b", "blue": "#459bff",
+        "switch_track_off": "#14121f", "switch_track_on": "#6954e8",
     },
     "dark": {
         "bg": "#121124", "card": "#211f38", "card2": "#292642",
@@ -42,6 +43,7 @@ PALETTES = {
         "accent": "#a69aff", "accent2": "#c0a9ff", "sidebar": "#1a1738",
         "sidebar2": "#121029", "chart": "#211f38", "grid": "#3b3654",
         "green": "#42d3ad", "amber": "#ffbc68", "blue": "#7cb4ff",
+        "switch_track_off": "#524c6e", "switch_track_on": "#8e7cff",
     },
 }
 
@@ -71,18 +73,6 @@ def load_gray_file(path: str, modified_ns: int, file_size: int) -> np.ndarray:
     if image.ndim != 2 or image.dtype != np.uint8 or min(image.shape) < 16:
         raise ValueError("Citra contoh harus grayscale 8-bit dan minimal 16 piksel.")
     return image
-
-
-@st.cache_data(show_spinner=False, max_entries=24)
-def analyze_image(raw_bytes: bytes, noise_type: str, noise_level: float, seed: int,
-                  filter_params: tuple) -> tuple:
-    ref = load_gray_bytes(raw_bytes)
-    noisy = apply_noise(ref, noise_type=noise_type, intensity=noise_level, seed=seed)
-    outputs = run_all_methods(noisy, **dict(filter_params))
-    metrics = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
-    for method, result in outputs.items():
-        metrics[method] = evaluate_enhancement(ref, result["image"], result["elapsed_ms"])
-    return ref, noisy, outputs, metrics
 
 
 def get_samples() -> list[Path]:
@@ -117,52 +107,44 @@ def metric_string(value: float, places: int = 2) -> str:
 
 
 def apply_dashboard_theme(theme: str) -> None:
-    p = PALETTES[theme]
-    light_sidebar_rules = """
-    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
-    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
-    [data-testid="stSidebar"] [data-testid="stRadio"] label,
-    [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stThumbValue"],
-    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small,
-    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] span,
-    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-      color:#fff!important;
-    }
-    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
-    [data-testid="stSidebar"] .brand-sub {color:#e0dcff!important;}
-    [data-testid="stSidebar"] [data-baseweb="select"] > div,
-    [data-testid="stSidebar"] [data-baseweb="input"] > div,
-    [data-testid="stSidebar"] [data-testid="stNumberInput"] input,
-    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
-      background:rgba(255,255,255,.16)!important;
-      border-color:rgba(255,255,255,.38)!important;
-      color:#fff!important;
-    }
-    [data-testid="stSidebar"] [data-baseweb="select"] input,
-    [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-value"],
-    [data-testid="stSidebar"] [data-baseweb="select"] svg,
-    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {
-      color:#fff!important; fill:#fff!important;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"],
-    [data-testid="stSidebar"] [data-testid="stExpander"] details,
-    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-      border-color:rgba(255,255,255,.3)!important;
-    }
-    [data-testid="stSidebar"] hr {border-color:rgba(255,255,255,.3)!important;}
-    [data-testid="stSidebar"] [role="radiogroup"] label p {color:#fff!important;}
-    [data-testid="stSidebar"] input::placeholder {color:#e0dcff!important;opacity:1;}
-    """
+    # Keep the stylesheet byte-for-byte stable; only the marker below changes on a theme switch.
+    # This allows CSS transitions instead of swapping a whole stylesheet during Streamlit reruns.
     css = """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
     :root {
-      --app-bg: __BG__; --card: __CARD__; --card2: __CARD2__;
-      --text: __TEXT__; --muted: __MUTED__; --line: __LINE__;
-      --accent: __ACCENT__; --accent2: __ACCENT2__;
-      --sidebar: __SIDEBAR__; --sidebar2: __SIDEBAR2__;
+      --app-bg: #f5f5fb; --card: #ffffff; --card2: #f9f8ff; --text: #23213d; --muted: #79768f; --line: #e7e5f2; --accent: #5947d9; --accent2: #7c67ed; --sidebar: #302a64; --sidebar2: #211c4e; --switch-track-off: #14121f; --switch-track-on: #6954e8;
+      --sidebar-chevron: #352b73;
+      --header-toggle-bg: #e9e6f6;
+      --header-toggle-hover: #ded9f4;
+    }
+    .stApp:has(#xray-theme-marker[data-theme="dark"]) {
+      --app-bg: #121124; --card: #211f38; --card2: #292642; --text: #f7f5ff; --muted: #b5b0ce; --line: #393550; --accent: #a69aff; --accent2: #c0a9ff; --sidebar: #1a1738; --sidebar2: #121029; --switch-track-off: #524c6e; --switch-track-on: #8e7cff;
+      --sidebar-chevron: #efeaff;
+      --header-toggle-bg: #292640;
+      --header-toggle-hover: #35304f;
+    }
+    /* Transitions apply to existing DOM nodes; the user's reduced-motion setting is respected. */
+    .stApp, .stApp [data-testid="stHeader"], .stApp [data-testid="stSidebar"],
+    .stApp .stat-card, .stApp .stat-symbol, .stApp .detail-panel,
+    .stApp .metric-mini, .stApp .note-strip, .stApp .batch-empty,
+    .stApp .section-chip, .stApp .top-pill,
+    .stApp .stTabs [data-baseweb="tab-list"],
+    .stApp [data-testid="stFileUploaderDropzone"],
+    .stApp [data-testid="stAlert"] {
+      transition: background-color .32s ease, border-color .32s ease,
+                  box-shadow .32s ease, color .32s ease;
+    }
+    .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp label,
+    .stApp .stat-value, .stApp .stat-footer, .stApp .topbar .crumb,
+    .stApp .section-heading h2, .stApp .stTabs [data-baseweb="tab"] {
+      transition: color .28s ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .stApp, .stApp *, .stApp *::before, .stApp *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+      }
     }
     html, body, [class*="css"], .stApp {font-family: 'DM Sans',sans-serif;}
     .stApp {background:var(--app-bg); color:var(--text);}
@@ -171,17 +153,62 @@ def apply_dashboard_theme(theme: str) -> None:
     .stApp .block-container {max-width:1500px; padding-top:5rem !important; padding-bottom:3.5rem;}
     [data-testid="stHeader"] {background:var(--app-bg)!important; border-bottom:1px solid var(--line);}
     [data-testid="stHeader"] button {color:var(--text);}
-    __LIGHT_SIDEBAR_RULES__
-    /* Compact theme switch, kept in the normal document flow instead of floating under the header. */
-    .stApp [data-testid="stToggle"] {background:var(--card);border:1px solid var(--line);border-radius:999px;
-      padding:8px 12px;box-shadow:0 3px 16px rgba(30,20,90,.035);min-width:145px;}
-    .stApp [data-testid="stToggle"] label {margin:0;}
-    .stApp [data-testid="stToggle"] label p {color:var(--text)!important;font-size:12px;font-weight:700;white-space:nowrap;}
-    .stApp [data-testid="stToggle"] [role="switch"][aria-checked="true"] {background:var(--accent)!important;}
+    /* The sidebar opener is rendered OUTSIDE the sidebar when it is collapsed.
+       Streamlit can assign it a faint default foreground in light mode. */
+    .stApp [data-testid="stSidebarCollapsedControl"],
+    .stApp [data-testid="stSidebarCollapseButton"] {opacity:1!important;}
+    .stApp [data-testid="stSidebarCollapsedControl"] button,
+    .stApp [data-testid="stSidebarCollapseButton"] button,
+    .stApp button[aria-label="Open sidebar"],
+    .stApp button[aria-label="Close sidebar"],
+    .stApp button[title="Open sidebar"],
+    .stApp button[title="Close sidebar"] {
+      color:var(--sidebar-chevron)!important;
+      background-color:var(--header-toggle-bg)!important;
+      opacity:1!important;
+      border:1px solid var(--line)!important;
+      border-radius:11px!important;
+      transition:background-color .28s ease, color .28s ease, border-color .28s ease;
+    }
+    .stApp [data-testid="stSidebarCollapsedControl"] button:hover,
+    .stApp [data-testid="stSidebarCollapseButton"] button:hover,
+    .stApp button[aria-label="Open sidebar"]:hover,
+    .stApp button[aria-label="Close sidebar"]:hover {
+      background-color:var(--header-toggle-hover)!important;
+    }
+    .stApp [data-testid="stSidebarCollapsedControl"] button svg,
+    .stApp [data-testid="stSidebarCollapseButton"] button svg,
+    .stApp button[aria-label="Open sidebar"] svg,
+    .stApp button[aria-label="Close sidebar"] svg {
+      color:var(--sidebar-chevron)!important;
+      stroke:var(--sidebar-chevron)!important;
+      opacity:1!important;
+      filter:none!important;
+    }
+    .stApp [data-testid="stSidebarCollapsedControl"] button svg path,
+    .stApp [data-testid="stSidebarCollapseButton"] button svg path,
+    .stApp button[aria-label="Open sidebar"] svg path,
+    .stApp button[aria-label="Close sidebar"] svg path {
+      stroke:var(--sidebar-chevron)!important;
+      opacity:1!important;
+    }
+    /* Streamlit sometimes uses a button directly as the collapsed control. */
+    .stApp [data-testid="stSidebarCollapsedControl"] > button {color:var(--sidebar-chevron)!important;}
     .stApp h1,.stApp h2,.stApp h3 {font-family:'Outfit','DM Sans',sans-serif; color:var(--text);}
     .stApp p,.stApp label {color:var(--text);}
     [data-testid="stSidebar"] {background:linear-gradient(165deg,var(--sidebar),var(--sidebar2)); border-right:1px solid rgba(255,255,255,.09);}
     [data-testid="stSidebar"] > div:first-child {padding-top:1.3rem;}
+    /* Inside the violet sidebar, the collapse arrow remains white in both modes. */
+    .stApp [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button,
+    .stApp [data-testid="stSidebar"] button[aria-label="Close sidebar"] {
+      color:#f7f4ff!important; background:rgba(255,255,255,.13)!important;
+      border-color:rgba(255,255,255,.18)!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg,
+    .stApp [data-testid="stSidebar"] button[aria-label="Close sidebar"] svg,
+    .stApp [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg path {
+      color:#f7f4ff!important; stroke:#f7f4ff!important;
+    }
     [data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] p,[data-testid="stSidebar"] label,
     [data-testid="stSidebar"] span,
@@ -201,6 +228,53 @@ def apply_dashboard_theme(theme: str) -> None:
       border:1px solid rgba(255,255,255,.17); background:rgba(255,255,255,.05); border-radius:15px;
     }
     [data-testid="stSidebar"] [data-testid="stExpander"] summary {color:#fff;}
+    /* Keep sidebar text and controls readable over the violet background in light mode. */
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stWidgetLabel"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stCaptionContainer"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stMarkdownContainer"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stMarkdownContainer"] span,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stRadio"] label,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stSlider"] [data-testid="stThumbValue"],
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stFileUploaderDropzone"] span,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stExpander"] summary {color:#fff!important;}
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stCaptionContainer"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"] .brand-sub {
+      color:#e0dcff!important;
+    }
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="select"] > div,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="input"] > div,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stNumberInput"] input,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stFileUploaderDropzone"] {
+      background:rgba(255,255,255,.16)!important;
+      border-color:rgba(255,255,255,.38)!important;
+      color:#fff!important;
+    }
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="select"] input,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="select"] svg,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stFileUploaderDropzone"] button {color:#fff!important;fill:#fff!important;}
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stExpander"],
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"] hr {
+      border-color:rgba(255,255,255,.3)!important;
+    }
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      input::placeholder {color:#e0dcff!important;opacity:1;}
     .stApp [data-testid="stVerticalBlockBorderWrapper"] > div {border-radius:16px;}
     .stApp [data-baseweb="select"] > div,
     .stApp [data-baseweb="input"] > div {
@@ -214,7 +288,6 @@ def apply_dashboard_theme(theme: str) -> None:
        background:var(--card2); border:1px dashed var(--line); border-radius:13px;
     }
     .stApp [data-testid="stDataFrame"] {border:1px solid var(--line);}
-    .stApp [data-testid="stToggle"] label p {color:var(--text);}
     .stApp .stTabs [data-baseweb="tab-list"] {
       background:var(--card); padding:7px; border-radius:16px;
       gap:5px; border:1px solid var(--line); box-shadow:0 3px 20px rgba(39,27,100,.03);
@@ -284,19 +357,166 @@ def apply_dashboard_theme(theme: str) -> None:
       color:var(--muted);font-size:12px;line-height:1.65;margin:13px 0 17px;}
     .gallery-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:15px 0 8px;}
     .small-foot {font-size:11px;color:var(--muted);margin-top:20px;text-align:center;line-height:1.6;}
+    /* ACCESSIBILITY PATCH 2026-11-24: sidebar text is white in BOTH modes.
+       Keep these AFTER the generic .stApp widget rules to win the cascade. */
+    .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
+    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    .stApp [data-testid="stSidebar"] [data-testid="stRadio"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+    .stApp [data-testid="stSidebar"] [data-testid="stSelectbox"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploader"] label p {
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important; opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] span,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] small,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] div,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
+      color:#eeebff!important; -webkit-text-fill-color:#eeebff!important; opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] span,
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] input,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input {
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+    }
+    /* File uploader: high-contrast violet button and white text on sidebar. */
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+      background:rgba(255,255,255,.10)!important;
+      border:1px dashed rgba(225,218,255,.5)!important;
+      border-radius:13px!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] {
+      background:#7058e5!important; border:1px solid #b3a5ff!important;
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+      opacity:1!important; font-weight:750!important;
+      border-radius:10px!important; box-shadow:0 2px 10px rgba(0,0,0,.12)!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button *,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] * {
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+      fill:currentColor!important; opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button:hover {
+      background:#6042cb!important;border-color:#d6ceff!important;
+    }
+    /* LIGHT/DARK SWITCH V3: a styled, native Streamlit button with a persistent, high-contrast track.
+       Unlike the BaseWeb toggle, the pseudo-elements are stable across Streamlit versions. */
+    .stApp .st-key-theme_toggle_control button,
+    .stApp .st-key-theme_toggle_control button[kind="secondary"] {
+      position:relative!important; display:flex!important; align-items:center!important;
+      justify-content:flex-start!important; width:100%!important; min-width:168px!important;
+      height:43px!important; padding:9px 12px 9px 58px!important;
+      border-radius:999px!important; background:var(--card)!important;
+      border:1px solid var(--line)!important;
+      color:var(--text)!important; -webkit-text-fill-color:var(--text)!important;
+      font-size:12px!important; font-weight:750!important; line-height:1.25!important;
+      box-shadow:0 3px 16px rgba(30,20,90,.045)!important;
+      transition:background-color .32s ease, border-color .32s ease, color .28s ease;
+      cursor:pointer!important;
+    }
+    .stApp .st-key-theme_toggle_control button:hover {
+      border-color:var(--accent)!important; background:var(--card2)!important;
+    }
+    .stApp .st-key-theme_toggle_control button:focus-visible {
+      outline:3px solid var(--accent)!important;outline-offset:2px!important;
+    }
+    .stApp .st-key-theme_toggle_control button :is(p,span,div) {
+      color:var(--text)!important;-webkit-text-fill-color:var(--text)!important;
+      font-weight:750!important;
+    }
+    .stApp .st-key-theme_toggle_control button::before {
+      content:""!important;position:absolute!important;left:13px!important;top:50%!important;
+      transform:translateY(-50%)!important;width:36px!important;height:21px!important;
+      border-radius:999px!important;background:var(--switch-track-off)!important;
+      border:1px solid rgba(255,255,255,.20)!important;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 0 0 1px var(--line)!important;
+      opacity:1!important; transition:background-color .32s ease!important;
+    }
+    .stApp .st-key-theme_toggle_control button::after {
+      content:""!important;position:absolute!important;top:50%!important;
+      left:17px!important;transform:translateY(-50%)!important;
+      width:15px!important;height:15px!important;border-radius:50%!important;
+      background:#ffffff!important;box-shadow:0 1px 3px rgba(0,0,0,.25)!important;
+      transition:left .32s cubic-bezier(.2,.8,.2,1)!important;
+    }
+    .stApp:has(#xray-theme-marker[data-theme="dark"]) .st-key-theme_toggle_control button::before {
+      background:var(--switch-track-on)!important;
+      border-color:#c7baff!important;
+    }
+    .stApp:has(#xray-theme-marker[data-theme="dark"]) .st-key-theme_toggle_control button::after {left:31px!important;}
+
+    /* File uploader: force contrast on every Streamlit upload control, including Batch Uji. */
+    .stApp [data-testid="stFileUploaderDropzone"] {
+      background:var(--card2)!important;border:1px dashed var(--line)!important;
+      border-radius:14px!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button,
+    .stApp [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] {
+      background:#6550df!important; background-image:none!important;
+      border:1px solid #6550df!important; border-radius:10px!important;
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+      opacity:1!important; font-weight:750!important;
+      box-shadow:0 3px 10px rgba(69,50,147,.18)!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button :is(p,span,div),
+    .stApp [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] :is(p,span,div) {
+      color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;
+      opacity:1!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button svg,
+    .stApp [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] svg {
+      color:#ffffff!important;stroke:#ffffff!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button:hover {
+      background:#5236c3!important;border-color:#5236c3!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzoneInstructions"] :is(span,small,p,div),
+    .stApp [data-testid="stFileUploaderDropzone"] small {
+      color:var(--muted)!important;-webkit-text-fill-color:var(--muted)!important;
+      opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] :is(span,small,p,div),
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
+      color:#eeebff!important;-webkit-text-fill-color:#eeebff!important;
+    }
+    /* Ensure all status-message text remains readable even when Streamlit defaults differ. */
+    .stApp [data-testid="stAlert"] {
+      background:var(--card2)!important;border:1px solid var(--line)!important;
+      color:var(--text)!important;
+    }
+    .stApp [data-testid="stAlert"] :is(p,span,div) {
+      color:var(--text)!important;-webkit-text-fill-color:var(--text)!important;
+    }
+    .batch-empty {
+      display:flex;align-items:center;gap:12px;padding:18px 20px;margin:10px 0 17px;
+      border:1px solid var(--line);border-left:4px solid var(--accent);
+      border-radius:13px;background:var(--card2);color:var(--text)!important;
+      font-size:13px;font-weight:600;line-height:1.6;
+    }
+    .batch-empty .batch-empty-icon {
+      display:grid;place-items:center;flex:0 0 auto;border-radius:50%;
+      color:var(--accent)!important;background:var(--card);width:29px;height:29px;
+      font-size:16px;font-weight:800;
+    }
+    .batch-empty span {color:var(--text)!important;-webkit-text-fill-color:var(--text)!important;}
     @media(max-width:1000px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));}.hero-visual{width:135px;height:128px;}.hero-visual img{width:105px;height:105px}}
     @media(max-width:650px){.stApp .block-container{padding-top:4.75rem!important;}
       .topbar .crumb{font-size:10px;line-height:1.4;}
-      .stApp [data-testid="stToggle"]{padding:7px 9px;min-width:0;}
-      .stApp [data-testid="stToggle"] label p{font-size:11px;}
+      .stApp .st-key-theme_toggle_control button{min-width:145px!important;font-size:11px!important;}
       .stats{grid-template-columns:1fr 1fr;gap:9px;}.stat-card{padding:12px;min-height:112px;}.stat-value{font-size:19px;}
       .hero{padding:23px 19px;}.hero-visual{display:none;}.block-container{padding-left:1rem;padding-right:1rem;}.top-pill{display:none;}}
     </style>
     """
-    for k, v in p.items():
-        css = css.replace("__" + k.upper() + "__", v)
-    css = css.replace("__LIGHT_SIDEBAR_RULES__", light_sidebar_rules if theme == "light" else "")
     st.markdown(css, unsafe_allow_html=True)
+    st.markdown(
+        f'<span id="xray-theme-marker" data-theme="{theme}" '
+        'style="display:none" aria-hidden="true"></span>',
+        unsafe_allow_html=True,
+    )
 
 
 def heading(title: str, subtitle: str, chip: str = "") -> None:
@@ -306,6 +526,11 @@ def heading(title: str, subtitle: str, chip: str = "") -> None:
         f'<p>{safe_label(subtitle)}</p></div>{optional}</div>',
         unsafe_allow_html=True,
     )
+
+
+def flip_dashboard_theme() -> None:
+    """Switch theme without keeping the original CSS-dependent toggle widget."""
+    st.session_state["dark_mode"] = not st.session_state.get("dark_mode", False)
 
 
 def dashboard_toolbar() -> None:
@@ -319,10 +544,17 @@ def dashboard_toolbar() -> None:
             unsafe_allow_html=True,
         )
     with theme_col:
-        st.toggle(
-            "🌙 Mode Gelap", key="dark_mode",
-            help="Aktifkan atau nonaktifkan tampilan gelap.",
-        )
+        # The button is a real Streamlit control. Its CSS draws a high-contrast switch track.
+        # It does not rely on the BaseWeb DOM shape used internally by st.toggle().
+        next_mode_label = "☀️ Mode Terang" if st.session_state["dark_mode"] else "🌙 Mode Gelap"
+        with st.container(key="theme_toggle_control"):
+            st.button(
+                next_mode_label,
+                key="theme_mode_button",
+                help="Beralih ke mode terang" if st.session_state["dark_mode"] else "Beralih ke mode gelap",
+                on_click=flip_dashboard_theme,
+                use_container_width=True,
+            )
 
 
 def dashboard_hero(ref_image: np.ndarray) -> None:
@@ -617,13 +849,10 @@ def render_visual_tab(ref, noisy, outputs, metrics_map, img_name, noise_type, th
         with col:
             st.markdown(f'<div class="gallery-label">{safe_label(title)}</div>', unsafe_allow_html=True)
             st.image(img, use_container_width=True, clamp=True)
-    fig = make_comparison_figure(ref, noisy, outputs, metrics_map, theme)
-    try:
-        st.download_button("↓ Unduh kolase perbandingan (PNG)", fig_to_bytes(fig),
-                           file_name=f"hasil_{Path(img_name).stem}_{noise_type}.png",
-                           mime="image/png", key="download_comparison")
-    finally:
-        plt.close(fig)
+    st.download_button("↓ Unduh kolase perbandingan (PNG)",
+                       cached_comparison_image(ref, noisy, outputs, metrics_map, theme),
+                       file_name=f"hasil_{Path(img_name).stem}_{noise_type}.png",
+                       mime="image/png", key="download_comparison")
 
 
 def render_metrics_tab(df, img_name, noise_type, theme):
@@ -633,29 +862,23 @@ def render_metrics_tab(df, img_name, noise_type, theme):
                 'CLAHE berfokus pada kontras lokal, sehingga skornya perlu ditafsirkan sesuai tujuan.</div>',
                 unsafe_allow_html=True)
     st.dataframe(df, use_container_width=True, hide_index=True)
-    fig = make_metrics_chart(df, theme)
-    try:
-        st.pyplot(fig, use_container_width=True)
-        c1, c2 = st.columns(2)
-        with c1:
-            st.download_button("↓ Ekspor data metrik (CSV)", data=df.to_csv(index=False).encode("utf-8"),
-                               file_name=f"metrik_{Path(img_name).stem}_{noise_type}.csv", mime="text/csv")
-        with c2:
-            st.download_button("↓ Ekspor grafik (PNG)", fig_to_bytes(fig),
-                               file_name=f"grafik_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
-    finally:
-        plt.close(fig)
+    chart_png = cached_metrics_image(df, theme)
+    st.image(chart_png, use_container_width=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.download_button("↓ Ekspor data metrik (CSV)", data=df.to_csv(index=False).encode("utf-8"),
+                           file_name=f"metrik_{Path(img_name).stem}_{noise_type}.csv", mime="text/csv")
+    with c2:
+        st.download_button("↓ Ekspor grafik (PNG)", chart_png,
+                           file_name=f"grafik_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
 
 
 def render_histogram_tab(ref, noisy, outputs, img_name, noise_type, theme):
     heading("Histogram Explorer", "Amati persebaran intensitas 0–255 dari citra asli dan setiap hasil filter.", "PIXEL DISTRIBUTION")
-    fig = make_histogram_chart(ref, noisy, outputs, theme)
-    try:
-        st.pyplot(fig, use_container_width=True)
-        st.download_button("↓ Unduh histogram (PNG)", fig_to_bytes(fig),
-                           file_name=f"histogram_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
-    finally:
-        plt.close(fig)
+    chart_png = cached_histogram_image(ref, noisy, outputs, theme)
+    st.image(chart_png, use_container_width=True)
+    st.download_button("↓ Unduh histogram (PNG)", chart_png,
+                       file_name=f"histogram_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
     st.markdown('<div class="note-strip">Histogram menunjukkan distribusi intensitas, bukan informasi diagnostik. '
                 'Perubahan sebaran setelah CLAHE terutama mencerminkan peningkatan kontras lokal.</div>',
                 unsafe_allow_html=True)
@@ -669,7 +892,11 @@ def render_batch_tab(cfg, theme):
     batch_files = st.file_uploader("Pilih beberapa citra PNG/JPG", type=["png", "jpg", "jpeg"],
                                    accept_multiple_files=True, key="batch_files")
     if not batch_files:
-        st.info("Tambahkan dua atau lebih citra untuk mulai membandingkan hasil batch.")
+        st.markdown(
+            '<div class="batch-empty"><span class="batch-empty-icon">ⓘ</span>'
+            '<span>Tambahkan dua atau lebih citra untuk mulai membandingkan hasil batch.</span></div>',
+            unsafe_allow_html=True,
+        )
         return
     if st.button("▶ Jalankan evaluasi batch", type="primary", key="run_batch"):
         rows, issues = [], []
@@ -722,6 +949,46 @@ def render_batch_tab(cfg, theme):
                            file_name=f"batch_detail_{cfg['noise_type']}.csv", mime="text/csv")
 
 
+@st.cache_data(show_spinner=False, max_entries=24)
+def cached_evaluation(ref: np.ndarray, noise_type: str, noise_level: float,
+                      seed: int, filter_items: tuple) -> tuple:
+    """Only recompute if the image/noise/filter configuration changed, not the UI theme."""
+    noisy = apply_noise(ref, noise_type=noise_type, intensity=noise_level, seed=seed)
+    outputs = run_all_methods(noisy, **dict(filter_items))
+    metrics = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
+    for method, result in outputs.items():
+        metrics[method] = evaluate_enhancement(ref, result["image"], result["elapsed_ms"])
+    df = pd.DataFrame([{"Metode": method, **value} for method, value in metrics.items()])
+    return noisy, outputs, metrics, df
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def cached_comparison_image(ref, noisy, outputs, metrics, theme: str) -> bytes:
+    fig = make_comparison_figure(ref, noisy, outputs, metrics, theme)
+    try:
+        return fig_to_bytes(fig)
+    finally:
+        plt.close(fig)
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def cached_metrics_image(df, theme: str) -> bytes:
+    fig = make_metrics_chart(df, theme)
+    try:
+        return fig_to_bytes(fig)
+    finally:
+        plt.close(fig)
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def cached_histogram_image(ref, noisy, outputs, theme: str) -> bytes:
+    fig = make_histogram_chart(ref, noisy, outputs, theme)
+    try:
+        return fig_to_bytes(fig)
+    finally:
+        plt.close(fig)
+
+
 def main():
     st.set_page_config(page_title="XRay Clarity Lab | Image Studio", page_icon="🔬",
                        layout="wide", initial_sidebar_state="expanded")
@@ -738,15 +1005,11 @@ def main():
         st.info("Belum ada citra yang dipilih. Kamu juga dapat menggunakan Citra Contoh dari sidebar.")
         return
 
-    ok, encoded_ref = cv2.imencode(".png", cfg["ref"])
-    if not ok:
-        st.error("Gagal menyiapkan citra untuk analisis.")
-        return
-    ref, noisy, outputs, metrics = analyze_image(
-        encoded_ref.tobytes(), cfg["noise_type"], cfg["noise_level"], cfg["seed"],
+    ref = cfg["ref"]
+    noisy, outputs, metrics, df = cached_evaluation(
+        ref, cfg["noise_type"], cfg["noise_level"], cfg["seed"],
         tuple(cfg["filter_params"].items()),
     )
-    df = pd.DataFrame([{"Metode": method, **value} for method, value in metrics.items()])
     dashboard_hero(ref)
     render_stats(ref, cfg["img_name"], df, theme)
     tab_v, tab_m, tab_h, tab_b = st.tabs([
