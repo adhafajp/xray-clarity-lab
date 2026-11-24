@@ -215,75 +215,17 @@ def apply_dashboard_theme(theme: str) -> None:
     [data-testid="stSidebar"] .stMarkdown {color:#f6f4ff;}
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {color:#e9e6ff; font-weight:600;}
     [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color:#c0bcdd;}
-    [data-testid="stSidebar"] [data-baseweb="select"] > div,
-    [data-testid="stSidebar"] [data-baseweb="input"] > div,
-    [data-testid="stSidebar"] [data-testid="stNumberInput"] input,
-    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
-      background:rgba(255,255,255,.105)!important; border-color:rgba(255,255,255,.18)!important;
-      color:#fff!important; border-radius:12px!important;
-    }
-    [data-testid="stSidebar"] input {color:#fff!important;}
     [data-testid="stSidebar"] hr {border-color:rgba(255,255,255,.18);}
-    [data-testid="stSidebar"] [data-testid="stExpander"] {
-      border:1px solid rgba(255,255,255,.17); background:rgba(255,255,255,.05); border-radius:15px;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"] summary {color:#fff;}
-    /* Keep sidebar text and controls readable over the violet background in light mode. */
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stWidgetLabel"] p,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stCaptionContainer"] p,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stMarkdownContainer"] p,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stMarkdownContainer"] span,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stRadio"] label,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stSlider"] [data-testid="stThumbValue"],
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stFileUploaderDropzone"] span,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stExpander"] summary {color:#fff!important;}
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stCaptionContainer"] p,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"] .brand-sub {
-      color:#e0dcff!important;
-    }
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-baseweb="select"] > div,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-baseweb="input"] > div,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stNumberInput"] input,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stFileUploaderDropzone"] {
-      background:rgba(255,255,255,.16)!important;
-      border-color:rgba(255,255,255,.38)!important;
-      color:#fff!important;
-    }
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-baseweb="select"] input,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-baseweb="select"] svg,
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stFileUploaderDropzone"] button {color:#fff!important;fill:#fff!important;}
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      [data-testid="stExpander"],
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"] hr {
-      border-color:rgba(255,255,255,.3)!important;
-    }
-    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
-      input::placeholder {color:#e0dcff!important;opacity:1;}
+
     .stApp [data-testid="stVerticalBlockBorderWrapper"] > div {border-radius:16px;}
-    .stApp [data-baseweb="select"] > div,
-    .stApp [data-baseweb="input"] > div {
+    .stApp [data-testid="stMain"] [data-baseweb="select"] > div,
+    .stApp [data-testid="stMain"] [data-baseweb="input"] {
        border-radius:12px; background:var(--card2); color:var(--text);
        border-color:var(--line);
     }
-    .stApp [data-testid="stWidgetLabel"] p,
-    .stApp [data-baseweb="select"] input,
-    .stApp [data-baseweb="input"] input {color:var(--text);}
+    .stApp [data-testid="stMain"] [data-testid="stWidgetLabel"] p,
+    .stApp [data-testid="stMain"] [data-baseweb="select"] input,
+    .stApp [data-testid="stMain"] [data-baseweb="input"] input {color:var(--text);}
     .stApp [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
        background:var(--card2); border:1px dashed var(--line); border-radius:13px;
     }
@@ -357,51 +299,175 @@ def apply_dashboard_theme(theme: str) -> None:
       color:var(--muted);font-size:12px;line-height:1.65;margin:13px 0 17px;}
     .gallery-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:15px 0 8px;}
     .small-foot {font-size:11px;color:var(--muted);margin-top:20px;text-align:center;line-height:1.6;}
-    /* ACCESSIBILITY PATCH 2026-11-24: sidebar text is white in BOTH modes.
-       Keep these AFTER the generic .stApp widget rules to win the cascade. */
+    /* =========================================================
+       SIDEBAR UNIVERSAL THEME (Consistent High Contrast in Light & Dark)
+       ========================================================= */
+    /* General text in sidebar */
+    .stApp [data-testid="stSidebar"] h1,
+    .stApp [data-testid="stSidebar"] h2,
+    .stApp [data-testid="stSidebar"] h3,
+    .stApp [data-testid="stSidebar"] p,
+    .stApp [data-testid="stSidebar"] label,
+    .stApp [data-testid="stSidebar"] span,
+    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span {
+      color:#f7f5ff;
+    }
     .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
     .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
-    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
     .stApp [data-testid="stSidebar"] [data-testid="stRadio"] label p,
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary p,
     .stApp [data-testid="stSidebar"] [data-testid="stSelectbox"] label p,
     .stApp [data-testid="stSidebar"] [data-testid="stSlider"] label p,
     .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] label p,
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploader"] label p {
-      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important; opacity:1!important;
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+      opacity:1!important; font-weight:650!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] span,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] small,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] div,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
-      color:#eeebff!important; -webkit-text-fill-color:#eeebff!important; opacity:1!important;
+    .stApp [data-testid="stSidebar"] small {
+      color:#d1ccf0!important; -webkit-text-fill-color:#d1ccf0!important; opacity:1!important;
+    }
+
+    /* Selectbox in sidebar */
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] > div {
+      background:rgba(255,255,255,.12)!important;
+      border:1px solid rgba(255,255,255,.26)!important;
+      border-radius:12px!important;
+      color:#ffffff!important;
     }
     .stApp [data-testid="stSidebar"] [data-baseweb="select"] span,
-    .stApp [data-testid="stSidebar"] [data-baseweb="select"] input,
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input {
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] input {
       color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
     }
-    /* File uploader: high-contrast violet button and white text on sidebar. */
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] svg {
+      color:#ffffff!important; fill:#ffffff!important;
+    }
+
+    /* Number Input (Random Seed) in sidebar - fixes invisible input text bug */
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-testid="stNumberInputContainer"] {
+      background:rgba(255,255,255,.12)!important;
+      background-color:rgba(255,255,255,.12)!important;
+      border:1px solid rgba(255,255,255,.26)!important;
+      border-radius:12px!important;
+      overflow:hidden!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-baseweb="input"],
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-baseweb="input"] > div,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-baseweb="base-input"] {
+      background:transparent!important;
+      background-color:transparent!important;
+      border:none!important;
+      box-shadow:none!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInputField"] {
+      background:transparent!important;
+      background-color:transparent!important;
+      color:#ffffff!important;
+      -webkit-text-fill-color:#ffffff!important;
+      font-weight:700!important;
+      font-size:14px!important;
+      padding-left:12px!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button {
+      background:rgba(255,255,255,.12)!important;
+      color:#ffffff!important;
+      border:none!important;
+      border-left:1px solid rgba(255,255,255,.18)!important;
+      width:36px!important;
+      transition:background-color .15s ease!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button:hover {
+      background:rgba(255,255,255,.25)!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button svg,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button svg path {
+      color:#ffffff!important;
+      fill:#ffffff!important;
+      stroke:#ffffff!important;
+    }
+
+    /* Expanders in sidebar (Median Filter, Bilateral Filter, CLAHE) - fixes invisible header bug */
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] {
+      border:1px solid rgba(255,255,255,.20)!important;
+      background:rgba(255,255,255,.05)!important;
+      border-radius:14px!important;
+      overflow:hidden!important;
+      margin-bottom:11px!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+      background:rgba(255,255,255,.08)!important;
+      color:#ffffff!important;
+      -webkit-text-fill-color:#ffffff!important;
+      border-radius:13px!important;
+      padding:11px 14px!important;
+      transition:background-color .2s ease!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
+      background:rgba(255,255,255,.16)!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] details[open] > summary,
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary[aria-expanded="true"] {
+      background:rgba(255,255,255,.14)!important;
+      border-bottom:1px solid rgba(255,255,255,.15)!important;
+      border-bottom-left-radius:0!important;
+      border-bottom-right-radius:0!important;
+      color:#ffffff!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary :is(p, span, div) {
+      color:#ffffff!important;
+      -webkit-text-fill-color:#ffffff!important;
+      font-weight:700!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary [data-testid="stIconMaterial"],
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
+      color:#d8d0ff!important;
+      fill:#d8d0ff!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+      background:transparent!important;
+      border-top:1px solid rgba(255,255,255,.12)!important;
+      padding:14px 14px 16px!important;
+    }
+
+    /* Sliders and Select Sliders in sidebar */
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stThumbValue"] {
+      color:#f7f5ff!important;
+      -webkit-text-fill-color:#f7f5ff!important;
+      font-weight:700!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stTickBarMin"],
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stTickBarMax"],
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid^="stSliderTickBar"],
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] div[data-testid="stMarkdownContainer"] p {
+      color:#cfc8f7!important;
+      -webkit-text-fill-color:#cfc8f7!important;
+    }
+
+    /* File uploader in sidebar */
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
       background:rgba(255,255,255,.10)!important;
-      border:1px dashed rgba(225,218,255,.5)!important;
+      border:1px dashed rgba(225,218,255,.45)!important;
       border-radius:13px!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] {
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] {
       background:#7058e5!important; border:1px solid #b3a5ff!important;
       color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
       opacity:1!important; font-weight:750!important;
       border-radius:10px!important; box-shadow:0 2px 10px rgba(0,0,0,.12)!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button *,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] * {
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] * {
       color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
       fill:currentColor!important; opacity:1!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button:hover {
       background:#6042cb!important;border-color:#d6ceff!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] :is(span,small,p,div),
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
+      color:#eeebff!important; -webkit-text-fill-color:#eeebff!important; opacity:1!important;
     }
     /* LIGHT/DARK SWITCH V3: a styled, native Streamlit button with a persistent, high-contrast track.
        Unlike the BaseWeb toggle, the pseudo-elements are stable across Streamlit versions. */
@@ -761,7 +827,7 @@ def sidebar_controls(samples: list[Path]) -> dict | None:
         st.markdown(
             '<div class="brand-sidebar"><div class="brand-logo">XR</div>'
             '<div><div class="brand-name">clarity<span style="color:#ac9cff">lab</span></div>'
-            '<div class="brand-sub">X-RAY IMAGE STUDIO</div></div></div>',
+            '<div class="brand-sub">X-RAY IMAGE STUDIO</div></div>',
             unsafe_allow_html=True,
         )
         st.markdown('<div class="sidebar-group">01 &nbsp; / &nbsp; SUMBER CITRA</div>', unsafe_allow_html=True)
