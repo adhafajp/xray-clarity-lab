@@ -103,17 +103,44 @@ def metric_string(value: float, places: int = 2) -> str:
 
 
 def apply_dashboard_theme(theme: str) -> None:
-    p = PALETTES[theme]
+    # Keep the stylesheet byte-for-byte stable; only the marker below changes on a theme switch.
+    # This allows CSS transitions instead of swapping a whole stylesheet during Streamlit reruns.
     css = """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
     :root {
-      --app-bg: __BG__; --card: __CARD__; --card2: __CARD2__;
-      --text: __TEXT__; --muted: __MUTED__; --line: __LINE__;
-      --accent: __ACCENT__; --accent2: __ACCENT2__;
-      --sidebar: __SIDEBAR__; --sidebar2: __SIDEBAR2__;
-      --switch-track-off: __SWITCH_TRACK_OFF__;
-      --switch-track-on: __SWITCH_TRACK_ON__;
+      --app-bg: #f5f5fb; --card: #ffffff; --card2: #f9f8ff; --text: #23213d; --muted: #79768f; --line: #e7e5f2; --accent: #5947d9; --accent2: #7c67ed; --sidebar: #302a64; --sidebar2: #211c4e; --switch-track-off: #14121f; --switch-track-on: #6954e8;
+      --sidebar-chevron: #352b73;
+      --header-toggle-bg: #e9e6f6;
+      --header-toggle-hover: #ded9f4;
+    }
+    .stApp:has(#xray-theme-marker[data-theme="dark"]) {
+      --app-bg: #121124; --card: #211f38; --card2: #292642; --text: #f7f5ff; --muted: #b5b0ce; --line: #393550; --accent: #a69aff; --accent2: #c0a9ff; --sidebar: #1a1738; --sidebar2: #121029; --switch-track-off: #524c6e; --switch-track-on: #8e7cff;
+      --sidebar-chevron: #efeaff;
+      --header-toggle-bg: #292640;
+      --header-toggle-hover: #35304f;
+    }
+    /* Transitions apply to existing DOM nodes; the user's reduced-motion setting is respected. */
+    .stApp, .stApp [data-testid="stHeader"], .stApp [data-testid="stSidebar"],
+    .stApp .stat-card, .stApp .stat-symbol, .stApp .detail-panel,
+    .stApp .metric-mini, .stApp .note-strip, .stApp .batch-empty,
+    .stApp .section-chip, .stApp .top-pill,
+    .stApp .stTabs [data-baseweb="tab-list"],
+    .stApp [data-testid="stFileUploaderDropzone"],
+    .stApp [data-testid="stAlert"] {
+      transition: background-color .32s ease, border-color .32s ease,
+                  box-shadow .32s ease, color .32s ease;
+    }
+    .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp label,
+    .stApp .stat-value, .stApp .stat-footer, .stApp .topbar .crumb,
+    .stApp .section-heading h2, .stApp .stTabs [data-baseweb="tab"] {
+      transition: color .28s ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .stApp, .stApp *, .stApp *::before, .stApp *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+      }
     }
     html, body, [class*="css"], .stApp {font-family: 'DM Sans',sans-serif;}
     .stApp {background:var(--app-bg); color:var(--text);}
@@ -122,10 +149,62 @@ def apply_dashboard_theme(theme: str) -> None:
     .stApp .block-container {max-width:1500px; padding-top:5rem !important; padding-bottom:3.5rem;}
     [data-testid="stHeader"] {background:var(--app-bg)!important; border-bottom:1px solid var(--line);}
     [data-testid="stHeader"] button {color:var(--text);}
+    /* The sidebar opener is rendered OUTSIDE the sidebar when it is collapsed.
+       Streamlit can assign it a faint default foreground in light mode. */
+    .stApp [data-testid="stSidebarCollapsedControl"],
+    .stApp [data-testid="stSidebarCollapseButton"] {opacity:1!important;}
+    .stApp [data-testid="stSidebarCollapsedControl"] button,
+    .stApp [data-testid="stSidebarCollapseButton"] button,
+    .stApp button[aria-label="Open sidebar"],
+    .stApp button[aria-label="Close sidebar"],
+    .stApp button[title="Open sidebar"],
+    .stApp button[title="Close sidebar"] {
+      color:var(--sidebar-chevron)!important;
+      background-color:var(--header-toggle-bg)!important;
+      opacity:1!important;
+      border:1px solid var(--line)!important;
+      border-radius:11px!important;
+      transition:background-color .28s ease, color .28s ease, border-color .28s ease;
+    }
+    .stApp [data-testid="stSidebarCollapsedControl"] button:hover,
+    .stApp [data-testid="stSidebarCollapseButton"] button:hover,
+    .stApp button[aria-label="Open sidebar"]:hover,
+    .stApp button[aria-label="Close sidebar"]:hover {
+      background-color:var(--header-toggle-hover)!important;
+    }
+    .stApp [data-testid="stSidebarCollapsedControl"] button svg,
+    .stApp [data-testid="stSidebarCollapseButton"] button svg,
+    .stApp button[aria-label="Open sidebar"] svg,
+    .stApp button[aria-label="Close sidebar"] svg {
+      color:var(--sidebar-chevron)!important;
+      stroke:var(--sidebar-chevron)!important;
+      opacity:1!important;
+      filter:none!important;
+    }
+    .stApp [data-testid="stSidebarCollapsedControl"] button svg path,
+    .stApp [data-testid="stSidebarCollapseButton"] button svg path,
+    .stApp button[aria-label="Open sidebar"] svg path,
+    .stApp button[aria-label="Close sidebar"] svg path {
+      stroke:var(--sidebar-chevron)!important;
+      opacity:1!important;
+    }
+    /* Streamlit sometimes uses a button directly as the collapsed control. */
+    .stApp [data-testid="stSidebarCollapsedControl"] > button {color:var(--sidebar-chevron)!important;}
     .stApp h1,.stApp h2,.stApp h3 {font-family:'Outfit','DM Sans',sans-serif; color:var(--text);}
     .stApp p,.stApp label {color:var(--text);}
     [data-testid="stSidebar"] {background:linear-gradient(165deg,var(--sidebar),var(--sidebar2)); border-right:1px solid rgba(255,255,255,.09);}
     [data-testid="stSidebar"] > div:first-child {padding-top:1.3rem;}
+    /* Inside the violet sidebar, the collapse arrow remains white in both modes. */
+    .stApp [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button,
+    .stApp [data-testid="stSidebar"] button[aria-label="Close sidebar"] {
+      color:#f7f4ff!important; background:rgba(255,255,255,.13)!important;
+      border-color:rgba(255,255,255,.18)!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg,
+    .stApp [data-testid="stSidebar"] button[aria-label="Close sidebar"] svg,
+    .stApp [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg path {
+      color:#f7f4ff!important; stroke:#f7f4ff!important;
+    }
     [data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] p,[data-testid="stSidebar"] label,
     [data-testid="stSidebar"] span,
@@ -285,7 +364,7 @@ def apply_dashboard_theme(theme: str) -> None:
       color:var(--text)!important; -webkit-text-fill-color:var(--text)!important;
       font-size:12px!important; font-weight:750!important; line-height:1.25!important;
       box-shadow:0 3px 16px rgba(30,20,90,.045)!important;
-      transition:background-color .18s ease, border-color .18s ease;
+      transition:background-color .32s ease, border-color .32s ease, color .28s ease;
       cursor:pointer!important;
     }
     .stApp .st-key-theme_toggle_control button:hover {
@@ -304,23 +383,20 @@ def apply_dashboard_theme(theme: str) -> None:
       border-radius:999px!important;background:var(--switch-track-off)!important;
       border:1px solid rgba(255,255,255,.20)!important;
       box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 0 0 1px var(--line)!important;
-      opacity:1!important;
+      opacity:1!important; transition:background-color .32s ease!important;
     }
     .stApp .st-key-theme_toggle_control button::after {
       content:""!important;position:absolute!important;top:50%!important;
       left:17px!important;transform:translateY(-50%)!important;
       width:15px!important;height:15px!important;border-radius:50%!important;
       background:#ffffff!important;box-shadow:0 1px 3px rgba(0,0,0,.25)!important;
-      transition:left .15s ease!important;
+      transition:left .32s cubic-bezier(.2,.8,.2,1)!important;
     }
-    .stApp:has(#xray-dashboard-dark-mode) .st-key-theme_toggle_control button::before {
+    .stApp:has(#xray-theme-marker[data-theme="dark"]) .st-key-theme_toggle_control button::before {
       background:var(--switch-track-on)!important;
       border-color:#c7baff!important;
     }
-    .stApp:has(#xray-dashboard-dark-mode) .st-key-theme_toggle_control button::after {left:31px!important;}
-    /* Theme state is also applied as a semantic theme class, independent of Streamlit's own theme. */
-    .stApp .st-key-theme_toggle_control[data-mode="dark"] button::before {background:var(--switch-track-on)!important;}
-    .stApp .st-key-theme_toggle_control[data-mode="dark"] button::after {left:31px!important;}
+    .stApp:has(#xray-theme-marker[data-theme="dark"]) .st-key-theme_toggle_control button::after {left:31px!important;}
 
     /* File uploader: force contrast on every Streamlit upload control, including Batch Uji. */
     .stApp [data-testid="stFileUploaderDropzone"] {
@@ -384,12 +460,12 @@ def apply_dashboard_theme(theme: str) -> None:
       .hero{padding:23px 19px;}.hero-visual{display:none;}.block-container{padding-left:1rem;padding-right:1rem;}.top-pill{display:none;}}
     </style>
     """
-    for k, v in p.items():
-        css = css.replace("__" + k.upper() + "__", v)
     st.markdown(css, unsafe_allow_html=True)
-    if theme == "dark":
-        st.markdown('<span id="xray-dashboard-dark-mode" style="display:none" aria-hidden="true"></span>',
-                    unsafe_allow_html=True)
+    st.markdown(
+        f'<span id="xray-theme-marker" data-theme="{theme}" '
+        'style="display:none" aria-hidden="true"></span>',
+        unsafe_allow_html=True,
+    )
 
 
 def heading(title: str, subtitle: str, chip: str = "") -> None:
@@ -721,13 +797,10 @@ def render_visual_tab(ref, noisy, outputs, metrics_map, img_name, noise_type, th
         with col:
             st.markdown(f'<div class="gallery-label">{safe_label(title)}</div>', unsafe_allow_html=True)
             st.image(img, use_container_width=True, clamp=True)
-    fig = make_comparison_figure(ref, noisy, outputs, metrics_map, theme)
-    try:
-        st.download_button("↓ Unduh kolase perbandingan (PNG)", fig_to_bytes(fig),
-                           file_name=f"hasil_{Path(img_name).stem}_{noise_type}.png",
-                           mime="image/png", key="download_comparison")
-    finally:
-        plt.close(fig)
+    st.download_button("↓ Unduh kolase perbandingan (PNG)",
+                       cached_comparison_image(ref, noisy, outputs, metrics_map, theme),
+                       file_name=f"hasil_{Path(img_name).stem}_{noise_type}.png",
+                       mime="image/png", key="download_comparison")
 
 
 def render_metrics_tab(df, img_name, noise_type, theme):
@@ -737,29 +810,23 @@ def render_metrics_tab(df, img_name, noise_type, theme):
                 'CLAHE berfokus pada kontras lokal, sehingga skornya perlu ditafsirkan sesuai tujuan.</div>',
                 unsafe_allow_html=True)
     st.dataframe(df, use_container_width=True, hide_index=True)
-    fig = make_metrics_chart(df, theme)
-    try:
-        st.pyplot(fig, use_container_width=True)
-        c1, c2 = st.columns(2)
-        with c1:
-            st.download_button("↓ Ekspor data metrik (CSV)", data=df.to_csv(index=False).encode("utf-8"),
-                               file_name=f"metrik_{Path(img_name).stem}_{noise_type}.csv", mime="text/csv")
-        with c2:
-            st.download_button("↓ Ekspor grafik (PNG)", fig_to_bytes(fig),
-                               file_name=f"grafik_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
-    finally:
-        plt.close(fig)
+    chart_png = cached_metrics_image(df, theme)
+    st.image(chart_png, use_container_width=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.download_button("↓ Ekspor data metrik (CSV)", data=df.to_csv(index=False).encode("utf-8"),
+                           file_name=f"metrik_{Path(img_name).stem}_{noise_type}.csv", mime="text/csv")
+    with c2:
+        st.download_button("↓ Ekspor grafik (PNG)", chart_png,
+                           file_name=f"grafik_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
 
 
 def render_histogram_tab(ref, noisy, outputs, img_name, noise_type, theme):
     heading("Histogram Explorer", "Amati persebaran intensitas 0–255 dari citra asli dan setiap hasil filter.", "PIXEL DISTRIBUTION")
-    fig = make_histogram_chart(ref, noisy, outputs, theme)
-    try:
-        st.pyplot(fig, use_container_width=True)
-        st.download_button("↓ Unduh histogram (PNG)", fig_to_bytes(fig),
-                           file_name=f"histogram_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
-    finally:
-        plt.close(fig)
+    chart_png = cached_histogram_image(ref, noisy, outputs, theme)
+    st.image(chart_png, use_container_width=True)
+    st.download_button("↓ Unduh histogram (PNG)", chart_png,
+                       file_name=f"histogram_{Path(img_name).stem}_{noise_type}.png", mime="image/png")
     st.markdown('<div class="note-strip">Histogram menunjukkan distribusi intensitas, bukan informasi diagnostik. '
                 'Perubahan sebaran setelah CLAHE terutama mencerminkan peningkatan kontras lokal.</div>',
                 unsafe_allow_html=True)
@@ -830,6 +897,46 @@ def render_batch_tab(cfg, theme):
                            file_name=f"batch_detail_{cfg['noise_type']}.csv", mime="text/csv")
 
 
+@st.cache_data(show_spinner=False, max_entries=24)
+def cached_evaluation(ref: np.ndarray, noise_type: str, noise_level: float,
+                      seed: int, filter_items: tuple) -> tuple:
+    """Only recompute if the image/noise/filter configuration changed, not the UI theme."""
+    noisy = apply_noise(ref, noise_type=noise_type, intensity=noise_level, seed=seed)
+    outputs = run_all_methods(noisy, **dict(filter_items))
+    metrics = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
+    for method, result in outputs.items():
+        metrics[method] = evaluate_enhancement(ref, result["image"], result["elapsed_ms"])
+    df = pd.DataFrame([{"Metode": method, **value} for method, value in metrics.items()])
+    return noisy, outputs, metrics, df
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def cached_comparison_image(ref, noisy, outputs, metrics, theme: str) -> bytes:
+    fig = make_comparison_figure(ref, noisy, outputs, metrics, theme)
+    try:
+        return fig_to_bytes(fig)
+    finally:
+        plt.close(fig)
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def cached_metrics_image(df, theme: str) -> bytes:
+    fig = make_metrics_chart(df, theme)
+    try:
+        return fig_to_bytes(fig)
+    finally:
+        plt.close(fig)
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def cached_histogram_image(ref, noisy, outputs, theme: str) -> bytes:
+    fig = make_histogram_chart(ref, noisy, outputs, theme)
+    try:
+        return fig_to_bytes(fig)
+    finally:
+        plt.close(fig)
+
+
 def main():
     st.set_page_config(page_title="XRay Clarity Lab | Image Studio", page_icon="🔬",
                        layout="wide", initial_sidebar_state="expanded")
@@ -847,13 +954,10 @@ def main():
         return
 
     ref = cfg["ref"]
-    noisy = apply_noise(ref, noise_type=cfg["noise_type"],
-                        intensity=cfg["noise_level"], seed=cfg["seed"])
-    outputs = run_all_methods(noisy, **cfg["filter_params"])
-    metrics = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
-    for method, result in outputs.items():
-        metrics[method] = evaluate_enhancement(ref, result["image"], result["elapsed_ms"])
-    df = pd.DataFrame([{"Metode": method, **value} for method, value in metrics.items()])
+    noisy, outputs, metrics, df = cached_evaluation(
+        ref, cfg["noise_type"], cfg["noise_level"], cfg["seed"],
+        tuple(cfg["filter_params"].items()),
+    )
     dashboard_hero(ref)
     render_stats(ref, cfg["img_name"], df, theme)
     tab_v, tab_m, tab_h, tab_b = st.tabs([
