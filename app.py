@@ -48,7 +48,6 @@ PALETTES = {
 }
 
 
-@st.cache_data(show_spinner=False, max_entries=32)
 def load_gray_bytes(raw_bytes: bytes) -> np.ndarray:
     if len(raw_bytes) > MAX_UPLOAD_MB * 1024 * 1024:
         raise ValueError(f"Ukuran berkas maksimal {MAX_UPLOAD_MB} MB.")
@@ -65,13 +64,10 @@ def load_gray_bytes(raw_bytes: bytes) -> np.ndarray:
     return result
 
 
-@st.cache_data(show_spinner=False, max_entries=16)
-def load_gray_file(path: str, modified_ns: int, file_size: int) -> np.ndarray:
-    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+def load_gray_file(path: Path) -> np.ndarray:
+    image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
     if image is None:
         raise FileNotFoundError(f"Citra tidak ditemukan: {path}")
-    if image.ndim != 2 or image.dtype != np.uint8 or min(image.shape) < 16:
-        raise ValueError("Citra contoh harus grayscale 8-bit dan minimal 16 piksel.")
     return image
 
 
@@ -215,17 +211,28 @@ def apply_dashboard_theme(theme: str) -> None:
     [data-testid="stSidebar"] .stMarkdown {color:#f6f4ff;}
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {color:#e9e6ff; font-weight:600;}
     [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color:#c0bcdd;}
+    [data-testid="stSidebar"] [data-baseweb="select"] > div,
+    [data-testid="stSidebar"] [data-baseweb="input"] > div,
+    [data-testid="stSidebar"] [data-testid="stNumberInput"] input,
+    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+      background:rgba(255,255,255,.105)!important; border-color:rgba(255,255,255,.18)!important;
+      color:#fff!important; border-radius:12px!important;
+    }
+    [data-testid="stSidebar"] input {color:#fff!important;}
     [data-testid="stSidebar"] hr {border-color:rgba(255,255,255,.18);}
-
+    [data-testid="stSidebar"] [data-testid="stExpander"] {
+      border:1px solid rgba(255,255,255,.17); background:rgba(255,255,255,.05); border-radius:15px;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary {color:#fff;}
     .stApp [data-testid="stVerticalBlockBorderWrapper"] > div {border-radius:16px;}
-    .stApp [data-testid="stMain"] [data-baseweb="select"] > div,
-    .stApp [data-testid="stMain"] [data-baseweb="input"] {
+    .stApp [data-baseweb="select"] > div,
+    .stApp [data-baseweb="input"] > div {
        border-radius:12px; background:var(--card2); color:var(--text);
        border-color:var(--line);
     }
-    .stApp [data-testid="stMain"] [data-testid="stWidgetLabel"] p,
-    .stApp [data-testid="stMain"] [data-baseweb="select"] input,
-    .stApp [data-testid="stMain"] [data-baseweb="input"] input {color:var(--text);}
+    .stApp [data-testid="stWidgetLabel"] p,
+    .stApp [data-baseweb="select"] input,
+    .stApp [data-baseweb="input"] input {color:var(--text);}
     .stApp [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
        background:var(--card2); border:1px dashed var(--line); border-radius:13px;
     }
@@ -299,175 +306,54 @@ def apply_dashboard_theme(theme: str) -> None:
       color:var(--muted);font-size:12px;line-height:1.65;margin:13px 0 17px;}
     .gallery-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:15px 0 8px;}
     .small-foot {font-size:11px;color:var(--muted);margin-top:20px;text-align:center;line-height:1.6;}
-    /* =========================================================
-       SIDEBAR UNIVERSAL THEME (Consistent High Contrast in Light & Dark)
-       ========================================================= */
-    /* General text in sidebar */
-    .stApp [data-testid="stSidebar"] h1,
-    .stApp [data-testid="stSidebar"] h2,
-    .stApp [data-testid="stSidebar"] h3,
-    .stApp [data-testid="stSidebar"] p,
-    .stApp [data-testid="stSidebar"] label,
-    .stApp [data-testid="stSidebar"] span,
-    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span {
-      color:#f7f5ff;
-    }
+    /* ACCESSIBILITY PATCH 2026-11-24: sidebar text is white in BOTH modes.
+       Keep these AFTER the generic .stApp widget rules to win the cascade. */
     .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
     .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
+    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
     .stApp [data-testid="stSidebar"] [data-testid="stRadio"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary p,
     .stApp [data-testid="stSidebar"] [data-testid="stSelectbox"] label p,
     .stApp [data-testid="stSidebar"] [data-testid="stSlider"] label p,
     .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] label p,
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploader"] label p {
-      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
-      opacity:1!important; font-weight:650!important;
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important; opacity:1!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
-    .stApp [data-testid="stSidebar"] small {
-      color:#d1ccf0!important; -webkit-text-fill-color:#d1ccf0!important; opacity:1!important;
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] span,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] small,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] div,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
+      color:#eeebff!important; -webkit-text-fill-color:#eeebff!important; opacity:1!important;
     }
-
-    /* Selectbox in sidebar */
-    .stApp [data-testid="stSidebar"] [data-baseweb="select"] > div {
-      background:rgba(255,255,255,.12)!important;
-      border:1px solid rgba(255,255,255,.26)!important;
-      border-radius:12px!important;
-      color:#ffffff!important;
-    }
+    /* Labels remain white; selected values use dark text on the light field surface. */
     .stApp [data-testid="stSidebar"] [data-baseweb="select"] span,
     .stApp [data-testid="stSidebar"] [data-baseweb="select"] input {
+      color:#231d44!important; -webkit-text-fill-color:#231d44!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input {
       color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
     }
-    .stApp [data-testid="stSidebar"] [data-baseweb="select"] svg {
-      color:#ffffff!important; fill:#ffffff!important;
-    }
-
-    /* Number Input (Random Seed) in sidebar - fixes invisible input text bug */
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-testid="stNumberInputContainer"] {
-      background:rgba(255,255,255,.12)!important;
-      background-color:rgba(255,255,255,.12)!important;
-      border:1px solid rgba(255,255,255,.26)!important;
-      border-radius:12px!important;
-      overflow:hidden!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-baseweb="input"],
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-baseweb="input"] > div,
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-baseweb="base-input"] {
-      background:transparent!important;
-      background-color:transparent!important;
-      border:none!important;
-      box-shadow:none!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input,
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInputField"] {
-      background:transparent!important;
-      background-color:transparent!important;
-      color:#ffffff!important;
-      -webkit-text-fill-color:#ffffff!important;
-      font-weight:700!important;
-      font-size:14px!important;
-      padding-left:12px!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button {
-      background:rgba(255,255,255,.12)!important;
-      color:#ffffff!important;
-      border:none!important;
-      border-left:1px solid rgba(255,255,255,.18)!important;
-      width:36px!important;
-      transition:background-color .15s ease!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button:hover {
-      background:rgba(255,255,255,.25)!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button svg,
-    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button svg path {
-      color:#ffffff!important;
-      fill:#ffffff!important;
-      stroke:#ffffff!important;
-    }
-
-    /* Expanders in sidebar (Median Filter, Bilateral Filter, CLAHE) - fixes invisible header bug */
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] {
-      border:1px solid rgba(255,255,255,.20)!important;
-      background:rgba(255,255,255,.05)!important;
-      border-radius:14px!important;
-      overflow:hidden!important;
-      margin-bottom:11px!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-      background:rgba(255,255,255,.08)!important;
-      color:#ffffff!important;
-      -webkit-text-fill-color:#ffffff!important;
-      border-radius:13px!important;
-      padding:11px 14px!important;
-      transition:background-color .2s ease!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
-      background:rgba(255,255,255,.16)!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] details[open] > summary,
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary[aria-expanded="true"] {
-      background:rgba(255,255,255,.14)!important;
-      border-bottom:1px solid rgba(255,255,255,.15)!important;
-      border-bottom-left-radius:0!important;
-      border-bottom-right-radius:0!important;
-      color:#ffffff!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary :is(p, span, div) {
-      color:#ffffff!important;
-      -webkit-text-fill-color:#ffffff!important;
-      font-weight:700!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary [data-testid="stIconMaterial"],
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
-      color:#d8d0ff!important;
-      fill:#d8d0ff!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
-      background:transparent!important;
-      border-top:1px solid rgba(255,255,255,.12)!important;
-      padding:14px 14px 16px!important;
-    }
-
-    /* Sliders and Select Sliders in sidebar */
-    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stThumbValue"] {
-      color:#f7f5ff!important;
-      -webkit-text-fill-color:#f7f5ff!important;
-      font-weight:700!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stTickBarMin"],
-    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stTickBarMax"],
-    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid^="stSliderTickBar"],
-    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] div[data-testid="stMarkdownContainer"] p {
-      color:#cfc8f7!important;
-      -webkit-text-fill-color:#cfc8f7!important;
-    }
-
-    /* File uploader in sidebar */
+    /* File uploader: high-contrast violet button and white text on sidebar. */
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
       background:rgba(255,255,255,.10)!important;
-      border:1px dashed rgba(225,218,255,.45)!important;
+      border:1px dashed rgba(225,218,255,.5)!important;
       border-radius:13px!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] {
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] {
       background:#7058e5!important; border:1px solid #b3a5ff!important;
       color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
       opacity:1!important; font-weight:750!important;
       border-radius:10px!important; box-shadow:0 2px 10px rgba(0,0,0,.12)!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button *,
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] * {
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] * {
       color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
       fill:currentColor!important; opacity:1!important;
     }
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button:hover {
       background:#6042cb!important;border-color:#d6ceff!important;
-    }
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] :is(span,small,p,div),
-    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
-      color:#eeebff!important; -webkit-text-fill-color:#eeebff!important; opacity:1!important;
     }
     /* LIGHT/DARK SWITCH V3: a styled, native Streamlit button with a persistent, high-contrast track.
        Unlike the BaseWeb toggle, the pseudo-elements are stable across Streamlit versions. */
@@ -569,6 +455,182 @@ def apply_dashboard_theme(theme: str) -> None:
       font-size:16px;font-weight:800;
     }
     .batch-empty span {color:var(--text)!important;-webkit-text-fill-color:var(--text)!important;}
+    /* SIDEBAR FORM CONTRAST FIX V7.
+       A later, generic BaseWeb rule gave select/number fields the light
+       dashboard background, while the sidebar text was forced to white.
+       Re-establish a consistently DARK field background and white foreground
+       for BOTH dashboard themes. Keep labels, radio options and upload styles. */
+    .stApp {
+      --xray-sidebar-field-bg: #24204e;
+      --xray-sidebar-field-border: rgba(220, 211, 255, .32);
+      --xray-sidebar-field-text: #ffffff;
+      --xray-sidebar-field-placeholder: #ded8ff;
+      --xray-sidebar-select-bg: #f7f6fd;
+      --xray-sidebar-select-text: #211b40;
+    }
+    .stApp:has(#xray-theme-marker[data-theme="dark"]) {
+      --xray-sidebar-field-bg: #24203e;
+      --xray-sidebar-field-border: rgba(220, 211, 255, .29);
+    }
+    .stApp [data-testid="stSidebar"] [data-baseweb="input"] > div,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] [data-baseweb="input"] > div,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] > div > div {
+      background-color: var(--xray-sidebar-field-bg) !important;
+      background-image: none !important;
+      border-color: var(--xray-sidebar-field-border) !important;
+      color: var(--xray-sidebar-field-text) !important;
+      -webkit-text-fill-color: var(--xray-sidebar-field-text) !important;
+      opacity: 1 !important;
+    }
+    /* The text input itself should not paint a pale rectangle over the dark field. */
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input {
+      background: transparent !important;
+    }
+    /* Selected text in BaseWeb select and typed numerical value. */
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input {
+      color: var(--xray-sidebar-field-text) !important;
+      -webkit-text-fill-color: var(--xray-sidebar-field-text) !important;
+      opacity: 1 !important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input::placeholder {
+      color: var(--xray-sidebar-field-placeholder) !important;
+      -webkit-text-fill-color: var(--xray-sidebar-field-placeholder) !important;
+      opacity: 1 !important;
+    }
+    /* Dropdown chevron and +/- steppers must be legible as well. */
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] svg,
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] svg path,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button svg,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button svg path {
+      color: #f5f1ff !important;
+      stroke: currentColor !important;
+      opacity: 1 !important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button {
+      background-color: var(--xray-sidebar-field-bg) !important;
+      color: #f5f1ff !important;
+      -webkit-text-fill-color: #f5f1ff !important;
+      border-color: var(--xray-sidebar-field-border) !important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] button:hover {
+      background-color: #433779 !important;
+    }
+    /* Slider values, select-slider values, disabled fields, and help text. */
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] :is(p, span),
+    .stApp [data-testid="stSidebar"] [data-testid="stSelectSlider"] :is(p, span) {
+      color: #f5f1ff !important;
+      -webkit-text-fill-color: #f5f1ff !important;
+    }
+    .stApp [data-testid="stSidebar"] :is(input, button):disabled {
+      opacity: .7 !important;
+    }
+
+    /* SIDEBAR SELECTBOX CONTRAST FIX V8.
+       Actual user screenshots show white options on light select fields.
+       Fix the foreground at the source instead of depending on a dark
+       background which Streamlit/BaseWeb versions can override.
+       This scopes ONLY the select controls; radio, captions and labels
+       remain white against the purple sidebar. */
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"],
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] > div,
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] {
+      background:#f7f6fd!important;
+      background-color:#f7f6fd!important;
+      background-image:none!important;
+      border-color:#cbc5e8!important;
+      color:#211b40!important;
+      -webkit-text-fill-color:#211b40!important;
+      opacity:1!important;
+      border-radius:10px!important;
+    }
+    /* Higher specificity beats the earlier broad sidebar-white rule. */
+    html body [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] :is(span, div, input),
+    html body [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] :is(span, div, input),
+    html body [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] input::placeholder,
+    html body [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] input::placeholder {
+      color:#211b40!important;
+      -webkit-text-fill-color:#211b40!important;
+      opacity:1!important;
+    }
+    html body [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] svg,
+    html body [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] svg path,
+    html body [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] svg {
+      color:#211b40!important;
+      stroke:#211b40!important;
+      opacity:1!important;
+    }
+    /* Fallback for Streamlit versions that use a plain combobox wrapper. */
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] [aria-haspopup="listbox"] {
+      background-color:#f7f6fd!important;
+      color:#211b40!important;
+      -webkit-text-fill-color:#211b40!important;
+    }
+
+    /* SIDEBAR OPENER FIX V5.
+       The collapsed sidebar opener can be rendered by Streamlit as:
+       (a) a wrapper with a nested button/SVG,
+       (b) the button itself with data-testid,
+       (c) a Material Icon <span>, or
+       (d) a header button identified by its accessible name.
+       Do not prefix these rules with .stApp: the opener may be portaled outside it.
+       Root-scoped variables make the colors correct in BOTH modes. */
+    :root {
+      --xray-opener-icon: #30216f;
+      --xray-opener-bg: #e5dffd;
+      --xray-opener-border: #c9bdf4;
+    }
+    html:has(#xray-theme-marker[data-theme="dark"]) {
+      --xray-opener-icon: #ffffff;
+      --xray-opener-bg: #2d2946;
+      --xray-opener-border: #554c79;
+    }
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stSidebarCollapsedControl"] button,
+    button[data-testid="stSidebarCollapsedControl"],
+    [data-testid="stHeader"] button[aria-label="Open sidebar"],
+    [data-testid="stHeader"] button[aria-label="Show sidebar"],
+    [data-testid="stHeader"] button[title="Open sidebar"] {
+      color:var(--xray-opener-icon)!important;
+      -webkit-text-fill-color:var(--xray-opener-icon)!important;
+      background-color:var(--xray-opener-bg)!important;
+      border:1px solid var(--xray-opener-border)!important;
+      border-radius:11px!important;
+      opacity:1!important;
+      filter:none!important;
+    }
+    [data-testid="stSidebarCollapsedControl"]:hover,
+    [data-testid="stSidebarCollapsedControl"] button:hover,
+    [data-testid="stHeader"] button[aria-label="Open sidebar"]:hover {
+      box-shadow:0 0 0 2px var(--xray-opener-border)!important;
+    }
+    /* Material Symbols and Lucide icons require styling the inner element,
+       not merely the button's inherited color. */
+    [data-testid="stSidebarCollapsedControl"] :is(span, svg, path, g, i),
+    [data-testid="stSidebarCollapsedControl"]:is(span, svg),
+    button[data-testid="stSidebarCollapsedControl"] :is(span, svg, path, g, i),
+    [data-testid="stHeader"] button[aria-label="Open sidebar"] :is(span, svg, path, g, i),
+    [data-testid="stHeader"] button[aria-label="Show sidebar"] :is(span, svg, path, g, i),
+    [data-testid="stHeader"] button[title="Open sidebar"] :is(span, svg, path, g, i) {
+      color:var(--xray-opener-icon)!important;
+      -webkit-text-fill-color:var(--xray-opener-icon)!important;
+      stroke:var(--xray-opener-icon)!important;
+      fill:var(--xray-opener-icon)!important;
+      opacity:1!important;
+      filter:none!important;
+    }
+    [data-testid="stSidebarCollapsedControl"]::before,
+    [data-testid="stSidebarCollapsedControl"]::after,
+    [data-testid="stSidebarCollapsedControl"] button::before,
+    [data-testid="stSidebarCollapsedControl"] button::after {
+      color:var(--xray-opener-icon)!important;
+      -webkit-text-fill-color:var(--xray-opener-icon)!important;
+    }
+    /* Compatibility with icon-only header buttons in older Streamlit builds. */
+    [data-testid="stHeader"] button[aria-label="Open sidebar"] svg path,
+    [data-testid="stHeader"] button[aria-label="Show sidebar"] svg path {
+      stroke:var(--xray-opener-icon)!important;
+      fill:var(--xray-opener-icon)!important;
+    }
     @media(max-width:1000px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));}.hero-visual{width:135px;height:128px;}.hero-visual img{width:105px;height:105px}}
     @media(max-width:650px){.stApp .block-container{padding-top:4.75rem!important;}
       .topbar .crumb{font-size:10px;line-height:1.4;}
@@ -759,7 +821,8 @@ def before_after_view(before: np.ndarray, after: np.ndarray,
   .frame{position:relative;width:100%;height:383px;background:#0d0d1b;border-radius:17px;overflow:hidden;
      border:1px solid __BORDER__;user-select:none;--split:50%}
   .frame img{position:absolute;width:100%;height:100%;object-fit:contain;inset:0;pointer-events:none}
-  .frame .after{clip-path:inset(0 calc(100% - var(--split)) 0 0)}
+  /* Sebelah KIRI selalu BEFORE; sebelah KANAN selalu AFTER. */
+  .frame .after{clip-path:inset(0 0 0 var(--split))}
   .frame .line{position:absolute;top:0;bottom:0;left:var(--split);width:2px;background:#fff;
      transform:translateX(-50%);pointer-events:none;box-shadow:0 0 11px rgba(0,0,0,.3)}
   .handle{position:absolute;left:var(--split);top:50%;transform:translate(-50%,-50%);pointer-events:none;
@@ -827,7 +890,7 @@ def sidebar_controls(samples: list[Path]) -> dict | None:
         st.markdown(
             '<div class="brand-sidebar"><div class="brand-logo">XR</div>'
             '<div><div class="brand-name">clarity<span style="color:#ac9cff">lab</span></div>'
-            '<div class="brand-sub">X-RAY IMAGE STUDIO</div></div>',
+            '<div class="brand-sub">X-RAY IMAGE STUDIO</div></div></div>',
             unsafe_allow_html=True,
         )
         st.markdown('<div class="sidebar-group">01 &nbsp; / &nbsp; SUMBER CITRA</div>', unsafe_allow_html=True)
@@ -875,8 +938,7 @@ def sidebar_controls(samples: list[Path]) -> dict | None:
             ref_img = load_gray_bytes(uploaded.getvalue())
             img_name = uploaded.name
         else:
-            stat = chosen_sample.stat()
-            ref_img = load_gray_file(str(chosen_sample), stat.st_mtime_ns, stat.st_size)
+            ref_img = load_gray_file(chosen_sample)
             img_name = chosen_sample.name
     except (ValueError, FileNotFoundError) as exc:
         st.error(str(exc))
@@ -892,19 +954,83 @@ def sidebar_controls(samples: list[Path]) -> dict | None:
     }
 
 
+def comparison_statistics(before: np.ndarray, after: np.ndarray) -> tuple[float, float, int]:
+    """Measure *actual pixel differences*, without altering either image.
+
+    Returns mean absolute change (0–255), percentage of changed pixels,
+    and maximum absolute change; all metrics describe the two displayed inputs.
+    """
+    if before.shape != after.shape:
+        raise ValueError("Dimensi gambar yang dibandingkan harus sama.")
+    delta = np.abs(before.astype(np.int16) - after.astype(np.int16))
+    return float(delta.mean()), float(np.count_nonzero(delta) / delta.size * 100), int(delta.max())
+
+
 def render_visual_tab(ref, noisy, outputs, metrics_map, img_name, noise_type, theme):
-    heading("Before & After Studio", "Geser untuk melihat perubahan filter pada gambar yang sama.", "LIVE PREVIEW")
-    before_options = {"Citra Berderau": noisy, "Citra Asli": ref}
+    heading("Before & After Studio", "Bandingkan citra asli, citra berderau, dan hasil filter pada posisi yang sama.", "LIVE PREVIEW")
+    # Default: original versus synthetic noise, so the noise injection is easy to verify.
+    before_options = {"Citra Asli": ref, "Citra Berderau": noisy}
+    after_options = {
+        "Citra Berderau": noisy,
+        "Citra Asli": ref,
+        **{method: outputs[method]["image"] for method in METHODS},
+    }
     controls_left, controls_right = st.columns(2)
     with controls_left:
-        before_name = st.selectbox("Bandingkan dari", list(before_options), index=0)
+        before_name = st.selectbox("Bandingkan dari (kiri)", list(before_options), index=0)
     with controls_right:
-        selected = st.selectbox("Hasil metode", list(METHODS), index=1)
+        selected = st.selectbox("Bandingkan dengan (kanan)", list(after_options), index=0)
+
+    before_img = before_options[before_name]
+    after_img = after_options[selected]
+    mean_delta, changed_percent, max_delta = comparison_statistics(before_img, after_img)
     left, right = st.columns([1.73, 1.0], gap="medium")
     with left:
-        before_after_view(before_options[before_name], outputs[selected]["image"], before_name, selected, theme)
+        before_after_view(before_img, after_img, before_name, selected, theme)
+        if changed_percent == 0.0:
+            if noise_type == "none" and {before_name, selected} == {"Citra Asli", "Citra Berderau"}:
+                st.info("Citra Asli dan Citra Berderau memang identik karena jenis derau dipilih 'Tanpa Derau'. Pilih Gaussian atau Salt-and-Pepper pada sidebar.")
+            else:
+                st.info("Kedua gambar yang dipilih identik (selisih piksel = 0). Coba bandingkan dua gambar yang berbeda.")
+        else:
+            st.caption(
+                f"Selisih intensitas rata-rata: **{mean_delta:.2f}/255** · "
+                f"Piksel berubah: **{changed_percent:.1f}%** · "
+                f"Selisih maksimum: **{max_delta}/255**. "
+                "Nilai dihitung dari gambar, bukan dari efek tampilan."
+            )
+        with st.expander("🔎 Lihat peta perbedaan piksel (diperjelas ×4)", expanded=False):
+            delta = np.abs(before_img.astype(np.int16) - after_img.astype(np.int16))
+            diff_map = np.clip(delta * 4, 0, 255).astype(np.uint8)
+            st.image(diff_map, caption="Selisih absolut antara dua gambar, diperkuat 4× untuk VISUALISASI saja; citra dan metrik asli tidak diubah.", use_container_width=True)
+            if mean_delta < 3 and changed_percent > 0:
+                st.caption("Perbedaan memang sangat tipis pada skala tampilan normal; lihat peta selisih untuk mengamati perubahannya.")
     with right:
-        selected_metrics_panel(selected, metrics_map, noise_type)
+        if selected in METHODS:
+            selected_metrics_panel(selected, metrics_map, noise_type)
+        else:
+            # The unfiltered input is not a filtering method; show its own metrics.
+            values = metrics_map["Citra Berderau"] if selected == "Citra Berderau" else None
+            if values is None:
+                st.markdown(
+                    '<div class="detail-panel"><div class="detail-eyebrow">CITRA REFERENSI</div>'
+                    '<div class="detail-title">Citra Asli</div>'
+                    '<div class="detail-copy">Gambar asli merupakan acuan evaluasi, bukan hasil pemfilteran. '
+                    'Metrik PSNR/SSIM terhadap dirinya sendiri tidak berguna untuk membandingkan filter.</div></div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    '<div class="detail-panel"><div class="detail-eyebrow">SEBELUM FILTER</div>'
+                    '<div class="detail-title">Citra Berderau</div>'
+                    '<div class="detail-copy">Gangguan sintetis hasil injeksi. Gunakan opsi Median, '
+                    'Bilateral, atau CLAHE di menu kanan untuk melihat perubahan dan metrik hasil pemrosesan.</div>'
+                    '<div class="metric-pair">'
+                    f'<div class="metric-mini"><span>PSNR</span><b>{metric_string(values["PSNR (dB)"])} dB</b></div>'
+                    f'<div class="metric-mini"><span>SSIM</span><b>{metric_string(values["SSIM"], 4)}</b></div>'
+                    f'<div class="metric-mini"><span>MSE</span><b>{metric_string(values["MSE"])}</b></div>'
+                    '</div></div>', unsafe_allow_html=True,
+                )
     heading("Galeri Hasil Pemrosesan", "Lima visual disusun agar perubahan tekstur dan kontras mudah dibandingkan.")
     gallery = [
         ("Citra Asli", ref), ("Citra Berderau", noisy),
