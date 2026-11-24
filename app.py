@@ -46,6 +46,7 @@ PALETTES = {
 }
 
 
+@st.cache_data(show_spinner=False, max_entries=32)
 def load_gray_bytes(raw_bytes: bytes) -> np.ndarray:
     if len(raw_bytes) > MAX_UPLOAD_MB * 1024 * 1024:
         raise ValueError(f"Ukuran berkas maksimal {MAX_UPLOAD_MB} MB.")
@@ -62,11 +63,26 @@ def load_gray_bytes(raw_bytes: bytes) -> np.ndarray:
     return result
 
 
-def load_gray_file(path: Path) -> np.ndarray:
-    image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+@st.cache_data(show_spinner=False, max_entries=16)
+def load_gray_file(path: str, modified_ns: int, file_size: int) -> np.ndarray:
+    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     if image is None:
         raise FileNotFoundError(f"Citra tidak ditemukan: {path}")
+    if image.ndim != 2 or image.dtype != np.uint8 or min(image.shape) < 16:
+        raise ValueError("Citra contoh harus grayscale 8-bit dan minimal 16 piksel.")
     return image
+
+
+@st.cache_data(show_spinner=False, max_entries=24)
+def analyze_image(raw_bytes: bytes, noise_type: str, noise_level: float, seed: int,
+                  filter_params: tuple) -> tuple:
+    ref = load_gray_bytes(raw_bytes)
+    noisy = apply_noise(ref, noise_type=noise_type, intensity=noise_level, seed=seed)
+    outputs = run_all_methods(noisy, **dict(filter_params))
+    metrics = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
+    for method, result in outputs.items():
+        metrics[method] = evaluate_enhancement(ref, result["image"], result["elapsed_ms"])
+    return ref, noisy, outputs, metrics
 
 
 def get_samples() -> list[Path]:
@@ -102,6 +118,43 @@ def metric_string(value: float, places: int = 2) -> str:
 
 def apply_dashboard_theme(theme: str) -> None:
     p = PALETTES[theme]
+    light_sidebar_rules = """
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
+    [data-testid="stSidebar"] [data-testid="stRadio"] label,
+    [data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stThumbValue"],
+    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small,
+    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] span,
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+      color:#fff!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+    [data-testid="stSidebar"] .brand-sub {color:#e0dcff!important;}
+    [data-testid="stSidebar"] [data-baseweb="select"] > div,
+    [data-testid="stSidebar"] [data-baseweb="input"] > div,
+    [data-testid="stSidebar"] [data-testid="stNumberInput"] input,
+    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+      background:rgba(255,255,255,.16)!important;
+      border-color:rgba(255,255,255,.38)!important;
+      color:#fff!important;
+    }
+    [data-testid="stSidebar"] [data-baseweb="select"] input,
+    [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-value"],
+    [data-testid="stSidebar"] [data-baseweb="select"] svg,
+    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {
+      color:#fff!important; fill:#fff!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"],
+    [data-testid="stSidebar"] [data-testid="stExpander"] details,
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+      border-color:rgba(255,255,255,.3)!important;
+    }
+    [data-testid="stSidebar"] hr {border-color:rgba(255,255,255,.3)!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label p {color:#fff!important;}
+    [data-testid="stSidebar"] input::placeholder {color:#e0dcff!important;opacity:1;}
+    """
     css = """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
@@ -118,6 +171,7 @@ def apply_dashboard_theme(theme: str) -> None:
     .stApp .block-container {max-width:1500px; padding-top:5rem !important; padding-bottom:3.5rem;}
     [data-testid="stHeader"] {background:var(--app-bg)!important; border-bottom:1px solid var(--line);}
     [data-testid="stHeader"] button {color:var(--text);}
+    __LIGHT_SIDEBAR_RULES__
     /* Compact theme switch, kept in the normal document flow instead of floating under the header. */
     .stApp [data-testid="stToggle"] {background:var(--card);border:1px solid var(--line);border-radius:999px;
       padding:8px 12px;box-shadow:0 3px 16px rgba(30,20,90,.035);min-width:145px;}
@@ -241,6 +295,7 @@ def apply_dashboard_theme(theme: str) -> None:
     """
     for k, v in p.items():
         css = css.replace("__" + k.upper() + "__", v)
+    css = css.replace("__LIGHT_SIDEBAR_RULES__", light_sidebar_rules if theme == "light" else "")
     st.markdown(css, unsafe_allow_html=True)
 
 
@@ -522,7 +577,8 @@ def sidebar_controls(samples: list[Path]) -> dict | None:
             ref_img = load_gray_bytes(uploaded.getvalue())
             img_name = uploaded.name
         else:
-            ref_img = load_gray_file(chosen_sample)
+            stat = chosen_sample.stat()
+            ref_img = load_gray_file(str(chosen_sample), stat.st_mtime_ns, stat.st_size)
             img_name = chosen_sample.name
     except (ValueError, FileNotFoundError) as exc:
         st.error(str(exc))
@@ -682,13 +738,14 @@ def main():
         st.info("Belum ada citra yang dipilih. Kamu juga dapat menggunakan Citra Contoh dari sidebar.")
         return
 
-    ref = cfg["ref"]
-    noisy = apply_noise(ref, noise_type=cfg["noise_type"],
-                        intensity=cfg["noise_level"], seed=cfg["seed"])
-    outputs = run_all_methods(noisy, **cfg["filter_params"])
-    metrics = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
-    for method, result in outputs.items():
-        metrics[method] = evaluate_enhancement(ref, result["image"], result["elapsed_ms"])
+    ok, encoded_ref = cv2.imencode(".png", cfg["ref"])
+    if not ok:
+        st.error("Gagal menyiapkan citra untuk analisis.")
+        return
+    ref, noisy, outputs, metrics = analyze_image(
+        encoded_ref.tobytes(), cfg["noise_type"], cfg["noise_level"], cfg["seed"],
+        tuple(cfg["filter_params"].items()),
+    )
     df = pd.DataFrame([{"Metode": method, **value} for method, value in metrics.items()])
     dashboard_hero(ref)
     render_stats(ref, cfg["img_name"], df, theme)

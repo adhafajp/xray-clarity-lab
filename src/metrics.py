@@ -2,9 +2,19 @@ import cv2
 import numpy as np
 
 
+def _validate_pair(ref, target):
+    if not isinstance(ref, np.ndarray) or not isinstance(target, np.ndarray):
+        raise TypeError("Citra referensi dan hasil harus berupa numpy.ndarray.")
+    if ref.dtype != np.uint8 or target.dtype != np.uint8 or ref.ndim != 2 or target.ndim != 2:
+        raise ValueError("Citra harus berupa grayscale 8-bit.")
+    if ref.shape != target.shape or min(ref.shape, default=0) < 1:
+        raise ValueError("Citra referensi dan hasil harus memiliki dimensi sama dan tidak kosong.")
+
+
 def compute_mse(ref, target):
-    diff = ref.astype(np.float64) - target.astype(np.float64)
-    return float(np.mean(diff ** 2))
+    _validate_pair(ref, target)
+    diff = cv2.absdiff(ref, target).astype(np.float32)
+    return float(np.mean(diff * diff))
 
 
 def compute_psnr(ref, target, max_val=255.0):
@@ -15,6 +25,7 @@ def compute_psnr(ref, target, max_val=255.0):
 
 
 def compute_ssim(ref, target, data_range=255.0):
+    _validate_pair(ref, target)
     # Perhitungan SSIM dengan window Gaussian 11x11 (sigma=1.5)
     img1 = ref.astype(np.float64)
     img2 = target.astype(np.float64)

@@ -1,7 +1,15 @@
 import numpy as np
 
 
+def _validate_image(image):
+    if not isinstance(image, np.ndarray):
+        raise TypeError("Citra harus berupa numpy.ndarray.")
+    if image.dtype != np.uint8 or image.ndim != 2 or min(image.shape, default=0) < 1:
+        raise ValueError("Citra harus berupa grayscale 8-bit dengan dimensi tidak kosong.")
+
+
 def add_gaussian_noise(image, sigma=20.0, seed=42):
+    _validate_image(image)
     # Tambahkan derau Gaussian sesuai nilai sigma
     rng = np.random.default_rng(seed)
     noise = rng.normal(0.0, float(sigma), image.shape)
@@ -10,6 +18,7 @@ def add_gaussian_noise(image, sigma=20.0, seed=42):
 
 
 def add_salt_and_pepper_noise(image, amount=0.05, salt_ratio=0.5, seed=42):
+    _validate_image(image)
     # Tambahkan derau impuls (titik putih = 255, titik hitam = 0)
     rng = np.random.default_rng(seed)
     result = image.copy()
@@ -22,6 +31,7 @@ def add_salt_and_pepper_noise(image, amount=0.05, salt_ratio=0.5, seed=42):
 
 
 def apply_noise(image, noise_type="gaussian", intensity=20.0, seed=42):
+    _validate_image(image)
     mode = noise_type.strip().lower()
     if mode == "gaussian":
         return add_gaussian_noise(image, sigma=intensity, seed=seed)
