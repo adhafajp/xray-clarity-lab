@@ -35,6 +35,7 @@ PALETTES = {
         "accent": "#5947d9", "accent2": "#7c67ed", "sidebar": "#302a64",
         "sidebar2": "#211c4e", "chart": "#ffffff", "grid": "#e8e6f1",
         "green": "#18aa8c", "amber": "#efa44b", "blue": "#459bff",
+        "switch_track_off": "#14121f", "switch_track_on": "#6954e8",
     },
     "dark": {
         "bg": "#121124", "card": "#211f38", "card2": "#292642",
@@ -42,6 +43,7 @@ PALETTES = {
         "accent": "#a69aff", "accent2": "#c0a9ff", "sidebar": "#1a1738",
         "sidebar2": "#121029", "chart": "#211f38", "grid": "#3b3654",
         "green": "#42d3ad", "amber": "#ffbc68", "blue": "#7cb4ff",
+        "switch_track_off": "#524c6e", "switch_track_on": "#8e7cff",
     },
 }
 
@@ -110,6 +112,8 @@ def apply_dashboard_theme(theme: str) -> None:
       --text: __TEXT__; --muted: __MUTED__; --line: __LINE__;
       --accent: __ACCENT__; --accent2: __ACCENT2__;
       --sidebar: __SIDEBAR__; --sidebar2: __SIDEBAR2__;
+      --switch-track-off: __SWITCH_TRACK_OFF__;
+      --switch-track-on: __SWITCH_TRACK_ON__;
     }
     html, body, [class*="css"], .stApp {font-family: 'DM Sans',sans-serif;}
     .stApp {background:var(--app-bg); color:var(--text);}
@@ -230,6 +234,82 @@ def apply_dashboard_theme(theme: str) -> None:
       color:var(--muted);font-size:12px;line-height:1.65;margin:13px 0 17px;}
     .gallery-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:15px 0 8px;}
     .small-foot {font-size:11px;color:var(--muted);margin-top:20px;text-align:center;line-height:1.6;}
+    /* ACCESSIBILITY PATCH 2026-11-24: sidebar text is white in BOTH modes.
+       Keep these AFTER the generic .stApp widget rules to win the cascade. */
+    .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
+    .stApp [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    .stApp [data-testid="stSidebar"] [data-testid="stRadio"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+    .stApp [data-testid="stSidebar"] [data-testid="stSelectbox"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] label p,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploader"] label p {
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important; opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] span,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] small,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] div,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
+      color:#eeebff!important; -webkit-text-fill-color:#eeebff!important; opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] span,
+    .stApp [data-testid="stSidebar"] [data-baseweb="select"] input,
+    .stApp [data-testid="stSidebar"] [data-testid="stNumberInput"] input {
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+    }
+    /* File uploader: high-contrast violet button and white text on sidebar. */
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+      background:rgba(255,255,255,.10)!important;
+      border:1px dashed rgba(225,218,255,.5)!important;
+      border-radius:13px!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] {
+      background:#7058e5!important; border:1px solid #b3a5ff!important;
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+      opacity:1!important; font-weight:750!important;
+      border-radius:10px!important; box-shadow:0 2px 10px rgba(0,0,0,.12)!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button *,
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] * {
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+      fill:currentColor!important; opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button:hover {
+      background:#6042cb!important;border-color:#d6ceff!important;
+    }
+    /* Visible theme switch: black OFF track in light, lavender ON in dark.
+       Multiple selectors cover newer/older Streamlit/BaseWeb markup. */
+    .stApp [data-testid="stToggle"] input[role="switch"] + div,
+    .stApp [data-testid="stToggle"] [role="switch"][aria-checked="false"],
+    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"] > span:first-of-type,
+    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"] > div:first-of-type {
+      background-color:var(--switch-track-off)!important;
+      border-color:var(--switch-track-off)!important;
+      border-radius:999px!important;
+      box-shadow:0 0 0 1px rgba(255,255,255,.15)!important;
+      opacity:1!important;
+    }
+    .stApp [data-testid="stToggle"] input[role="switch"]:checked + div,
+    .stApp [data-testid="stToggle"] [role="switch"][aria-checked="true"],
+    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"]:has(input:checked) > span:first-of-type,
+    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"]:has(input:checked) > div:first-of-type {
+      background-color:var(--switch-track-on)!important;
+      border-color:var(--switch-track-on)!important;
+      box-shadow:0 0 0 1px rgba(174,160,255,.44)!important;
+      opacity:1!important;
+    }
+    .stApp [data-testid="stToggle"] input[role="switch"] + div > div,
+    .stApp [data-testid="stToggle"] [role="switch"]::before {
+      background:#ffffff!important;
+    }
+    .stApp [data-testid="stToggle"] label p,
+    .stApp [data-testid="stToggle"] label span:last-child {
+      color:var(--text)!important; -webkit-text-fill-color:var(--text)!important;
+      opacity:1!important;
+    }
     @media(max-width:1000px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));}.hero-visual{width:135px;height:128px;}.hero-visual img{width:105px;height:105px}}
     @media(max-width:650px){.stApp .block-container{padding-top:4.75rem!important;}
       .topbar .crumb{font-size:10px;line-height:1.4;}
@@ -264,9 +344,12 @@ def dashboard_toolbar() -> None:
             unsafe_allow_html=True,
         )
     with theme_col:
+        # Label describes the mode that can be activated, not the current mode.
+        # Streamlit reruns this function when the toggle value changes.
+        next_mode_label = "☀️ Mode Terang" if st.session_state["dark_mode"] else "🌙 Mode Gelap"
         st.toggle(
-            "🌙 Mode Gelap", key="dark_mode",
-            help="Aktifkan atau nonaktifkan tampilan gelap.",
+            next_mode_label, key="dark_mode",
+            help="Klik untuk beralih antara tampilan terang dan gelap.",
         )
 
 
