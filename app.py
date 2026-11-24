@@ -122,12 +122,6 @@ def apply_dashboard_theme(theme: str) -> None:
     .stApp .block-container {max-width:1500px; padding-top:5rem !important; padding-bottom:3.5rem;}
     [data-testid="stHeader"] {background:var(--app-bg)!important; border-bottom:1px solid var(--line);}
     [data-testid="stHeader"] button {color:var(--text);}
-    /* Compact theme switch, kept in the normal document flow instead of floating under the header. */
-    .stApp [data-testid="stToggle"] {background:var(--card);border:1px solid var(--line);border-radius:999px;
-      padding:8px 12px;box-shadow:0 3px 16px rgba(30,20,90,.035);min-width:145px;}
-    .stApp [data-testid="stToggle"] label {margin:0;}
-    .stApp [data-testid="stToggle"] label p {color:var(--text)!important;font-size:12px;font-weight:700;white-space:nowrap;}
-    .stApp [data-testid="stToggle"] [role="switch"][aria-checked="true"] {background:var(--accent)!important;}
     .stApp h1,.stApp h2,.stApp h3 {font-family:'Outfit','DM Sans',sans-serif; color:var(--text);}
     .stApp p,.stApp label {color:var(--text);}
     [data-testid="stSidebar"] {background:linear-gradient(165deg,var(--sidebar),var(--sidebar2)); border-right:1px solid rgba(255,255,255,.09);}
@@ -164,7 +158,6 @@ def apply_dashboard_theme(theme: str) -> None:
        background:var(--card2); border:1px dashed var(--line); border-radius:13px;
     }
     .stApp [data-testid="stDataFrame"] {border:1px solid var(--line);}
-    .stApp [data-testid="stToggle"] label p {color:var(--text);}
     .stApp .stTabs [data-baseweb="tab-list"] {
       background:var(--card); padding:7px; border-radius:16px;
       gap:5px; border:1px solid var(--line); box-shadow:0 3px 20px rgba(39,27,100,.03);
@@ -280,41 +273,113 @@ def apply_dashboard_theme(theme: str) -> None:
     .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button:hover {
       background:#6042cb!important;border-color:#d6ceff!important;
     }
-    /* Visible theme switch: black OFF track in light, lavender ON in dark.
-       Multiple selectors cover newer/older Streamlit/BaseWeb markup. */
-    .stApp [data-testid="stToggle"] input[role="switch"] + div,
-    .stApp [data-testid="stToggle"] [role="switch"][aria-checked="false"],
-    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"] > span:first-of-type,
-    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"] > div:first-of-type {
-      background-color:var(--switch-track-off)!important;
-      border-color:var(--switch-track-off)!important;
-      border-radius:999px!important;
-      box-shadow:0 0 0 1px rgba(255,255,255,.15)!important;
-      opacity:1!important;
-    }
-    .stApp [data-testid="stToggle"] input[role="switch"]:checked + div,
-    .stApp [data-testid="stToggle"] [role="switch"][aria-checked="true"],
-    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"]:has(input:checked) > span:first-of-type,
-    .stApp [data-testid="stToggle"] label[data-baseweb="checkbox"]:has(input:checked) > div:first-of-type {
-      background-color:var(--switch-track-on)!important;
-      border-color:var(--switch-track-on)!important;
-      box-shadow:0 0 0 1px rgba(174,160,255,.44)!important;
-      opacity:1!important;
-    }
-    .stApp [data-testid="stToggle"] input[role="switch"] + div > div,
-    .stApp [data-testid="stToggle"] [role="switch"]::before {
-      background:#ffffff!important;
-    }
-    .stApp [data-testid="stToggle"] label p,
-    .stApp [data-testid="stToggle"] label span:last-child {
+    /* LIGHT/DARK SWITCH V3: a styled, native Streamlit button with a persistent, high-contrast track.
+       Unlike the BaseWeb toggle, the pseudo-elements are stable across Streamlit versions. */
+    .stApp .st-key-theme_toggle_control button,
+    .stApp .st-key-theme_toggle_control button[kind="secondary"] {
+      position:relative!important; display:flex!important; align-items:center!important;
+      justify-content:flex-start!important; width:100%!important; min-width:168px!important;
+      height:43px!important; padding:9px 12px 9px 58px!important;
+      border-radius:999px!important; background:var(--card)!important;
+      border:1px solid var(--line)!important;
       color:var(--text)!important; -webkit-text-fill-color:var(--text)!important;
+      font-size:12px!important; font-weight:750!important; line-height:1.25!important;
+      box-shadow:0 3px 16px rgba(30,20,90,.045)!important;
+      transition:background-color .18s ease, border-color .18s ease;
+      cursor:pointer!important;
+    }
+    .stApp .st-key-theme_toggle_control button:hover {
+      border-color:var(--accent)!important; background:var(--card2)!important;
+    }
+    .stApp .st-key-theme_toggle_control button:focus-visible {
+      outline:3px solid var(--accent)!important;outline-offset:2px!important;
+    }
+    .stApp .st-key-theme_toggle_control button :is(p,span,div) {
+      color:var(--text)!important;-webkit-text-fill-color:var(--text)!important;
+      font-weight:750!important;
+    }
+    .stApp .st-key-theme_toggle_control button::before {
+      content:""!important;position:absolute!important;left:13px!important;top:50%!important;
+      transform:translateY(-50%)!important;width:36px!important;height:21px!important;
+      border-radius:999px!important;background:var(--switch-track-off)!important;
+      border:1px solid rgba(255,255,255,.20)!important;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 0 0 1px var(--line)!important;
       opacity:1!important;
     }
+    .stApp .st-key-theme_toggle_control button::after {
+      content:""!important;position:absolute!important;top:50%!important;
+      left:17px!important;transform:translateY(-50%)!important;
+      width:15px!important;height:15px!important;border-radius:50%!important;
+      background:#ffffff!important;box-shadow:0 1px 3px rgba(0,0,0,.25)!important;
+      transition:left .15s ease!important;
+    }
+    .stApp:has(#xray-dashboard-dark-mode) .st-key-theme_toggle_control button::before {
+      background:var(--switch-track-on)!important;
+      border-color:#c7baff!important;
+    }
+    .stApp:has(#xray-dashboard-dark-mode) .st-key-theme_toggle_control button::after {left:31px!important;}
+    /* Theme state is also applied as a semantic theme class, independent of Streamlit's own theme. */
+    .stApp .st-key-theme_toggle_control[data-mode="dark"] button::before {background:var(--switch-track-on)!important;}
+    .stApp .st-key-theme_toggle_control[data-mode="dark"] button::after {left:31px!important;}
+
+    /* File uploader: force contrast on every Streamlit upload control, including Batch Uji. */
+    .stApp [data-testid="stFileUploaderDropzone"] {
+      background:var(--card2)!important;border:1px dashed var(--line)!important;
+      border-radius:14px!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button,
+    .stApp [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] {
+      background:#6550df!important; background-image:none!important;
+      border:1px solid #6550df!important; border-radius:10px!important;
+      color:#ffffff!important; -webkit-text-fill-color:#ffffff!important;
+      opacity:1!important; font-weight:750!important;
+      box-shadow:0 3px 10px rgba(69,50,147,.18)!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button :is(p,span,div),
+    .stApp [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] :is(p,span,div) {
+      color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;
+      opacity:1!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button svg,
+    .stApp [data-testid="stFileUploaderDropzone"] [data-testid^="stBaseButton"] svg {
+      color:#ffffff!important;stroke:#ffffff!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzone"] button:hover {
+      background:#5236c3!important;border-color:#5236c3!important;
+    }
+    .stApp [data-testid="stFileUploaderDropzoneInstructions"] :is(span,small,p,div),
+    .stApp [data-testid="stFileUploaderDropzone"] small {
+      color:var(--muted)!important;-webkit-text-fill-color:var(--muted)!important;
+      opacity:1!important;
+    }
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzoneInstructions"] :is(span,small,p,div),
+    .stApp [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small {
+      color:#eeebff!important;-webkit-text-fill-color:#eeebff!important;
+    }
+    /* Ensure all status-message text remains readable even when Streamlit defaults differ. */
+    .stApp [data-testid="stAlert"] {
+      background:var(--card2)!important;border:1px solid var(--line)!important;
+      color:var(--text)!important;
+    }
+    .stApp [data-testid="stAlert"] :is(p,span,div) {
+      color:var(--text)!important;-webkit-text-fill-color:var(--text)!important;
+    }
+    .batch-empty {
+      display:flex;align-items:center;gap:12px;padding:18px 20px;margin:10px 0 17px;
+      border:1px solid var(--line);border-left:4px solid var(--accent);
+      border-radius:13px;background:var(--card2);color:var(--text)!important;
+      font-size:13px;font-weight:600;line-height:1.6;
+    }
+    .batch-empty .batch-empty-icon {
+      display:grid;place-items:center;flex:0 0 auto;border-radius:50%;
+      color:var(--accent)!important;background:var(--card);width:29px;height:29px;
+      font-size:16px;font-weight:800;
+    }
+    .batch-empty span {color:var(--text)!important;-webkit-text-fill-color:var(--text)!important;}
     @media(max-width:1000px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));}.hero-visual{width:135px;height:128px;}.hero-visual img{width:105px;height:105px}}
     @media(max-width:650px){.stApp .block-container{padding-top:4.75rem!important;}
       .topbar .crumb{font-size:10px;line-height:1.4;}
-      .stApp [data-testid="stToggle"]{padding:7px 9px;min-width:0;}
-      .stApp [data-testid="stToggle"] label p{font-size:11px;}
+      .stApp .st-key-theme_toggle_control button{min-width:145px!important;font-size:11px!important;}
       .stats{grid-template-columns:1fr 1fr;gap:9px;}.stat-card{padding:12px;min-height:112px;}.stat-value{font-size:19px;}
       .hero{padding:23px 19px;}.hero-visual{display:none;}.block-container{padding-left:1rem;padding-right:1rem;}.top-pill{display:none;}}
     </style>
@@ -322,6 +387,9 @@ def apply_dashboard_theme(theme: str) -> None:
     for k, v in p.items():
         css = css.replace("__" + k.upper() + "__", v)
     st.markdown(css, unsafe_allow_html=True)
+    if theme == "dark":
+        st.markdown('<span id="xray-dashboard-dark-mode" style="display:none" aria-hidden="true"></span>',
+                    unsafe_allow_html=True)
 
 
 def heading(title: str, subtitle: str, chip: str = "") -> None:
@@ -331,6 +399,11 @@ def heading(title: str, subtitle: str, chip: str = "") -> None:
         f'<p>{safe_label(subtitle)}</p></div>{optional}</div>',
         unsafe_allow_html=True,
     )
+
+
+def flip_dashboard_theme() -> None:
+    """Switch theme without keeping the original CSS-dependent toggle widget."""
+    st.session_state["dark_mode"] = not st.session_state.get("dark_mode", False)
 
 
 def dashboard_toolbar() -> None:
@@ -344,13 +417,17 @@ def dashboard_toolbar() -> None:
             unsafe_allow_html=True,
         )
     with theme_col:
-        # Label describes the mode that can be activated, not the current mode.
-        # Streamlit reruns this function when the toggle value changes.
+        # The button is a real Streamlit control. Its CSS draws a high-contrast switch track.
+        # It does not rely on the BaseWeb DOM shape used internally by st.toggle().
         next_mode_label = "☀️ Mode Terang" if st.session_state["dark_mode"] else "🌙 Mode Gelap"
-        st.toggle(
-            next_mode_label, key="dark_mode",
-            help="Klik untuk beralih antara tampilan terang dan gelap.",
-        )
+        with st.container(key="theme_toggle_control"):
+            st.button(
+                next_mode_label,
+                key="theme_mode_button",
+                help="Beralih ke mode terang" if st.session_state["dark_mode"] else "Beralih ke mode gelap",
+                on_click=flip_dashboard_theme,
+                use_container_width=True,
+            )
 
 
 def dashboard_hero(ref_image: np.ndarray) -> None:
@@ -696,7 +773,11 @@ def render_batch_tab(cfg, theme):
     batch_files = st.file_uploader("Pilih beberapa citra PNG/JPG", type=["png", "jpg", "jpeg"],
                                    accept_multiple_files=True, key="batch_files")
     if not batch_files:
-        st.info("Tambahkan dua atau lebih citra untuk mulai membandingkan hasil batch.")
+        st.markdown(
+            '<div class="batch-empty"><span class="batch-empty-icon">ⓘ</span>'
+            '<span>Tambahkan dua atau lebih citra untuk mulai membandingkan hasil batch.</span></div>',
+            unsafe_allow_html=True,
+        )
         return
     if st.button("▶ Jalankan evaluasi batch", type="primary", key="run_batch"):
         rows, issues = [], []
