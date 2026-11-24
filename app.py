@@ -48,6 +48,7 @@ PALETTES = {
 }
 
 
+@st.cache_data(show_spinner=False, max_entries=32)
 def load_gray_bytes(raw_bytes: bytes) -> np.ndarray:
     if len(raw_bytes) > MAX_UPLOAD_MB * 1024 * 1024:
         raise ValueError(f"Ukuran berkas maksimal {MAX_UPLOAD_MB} MB.")
@@ -64,10 +65,13 @@ def load_gray_bytes(raw_bytes: bytes) -> np.ndarray:
     return result
 
 
-def load_gray_file(path: Path) -> np.ndarray:
-    image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+@st.cache_data(show_spinner=False, max_entries=16)
+def load_gray_file(path: str, modified_ns: int, file_size: int) -> np.ndarray:
+    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     if image is None:
         raise FileNotFoundError(f"Citra tidak ditemukan: {path}")
+    if image.ndim != 2 or image.dtype != np.uint8 or min(image.shape) < 16:
+        raise ValueError("Citra contoh harus grayscale 8-bit dan minimal 16 piksel.")
     return image
 
 
@@ -224,6 +228,53 @@ def apply_dashboard_theme(theme: str) -> None:
       border:1px solid rgba(255,255,255,.17); background:rgba(255,255,255,.05); border-radius:15px;
     }
     [data-testid="stSidebar"] [data-testid="stExpander"] summary {color:#fff;}
+    /* Keep sidebar text and controls readable over the violet background in light mode. */
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stWidgetLabel"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stCaptionContainer"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stMarkdownContainer"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stMarkdownContainer"] span,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stRadio"] label,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stSlider"] [data-testid="stThumbValue"],
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stFileUploaderDropzone"] span,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stExpander"] summary {color:#fff!important;}
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stCaptionContainer"] p,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"] .brand-sub {
+      color:#e0dcff!important;
+    }
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="select"] > div,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="input"] > div,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stNumberInput"] input,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stFileUploaderDropzone"] {
+      background:rgba(255,255,255,.16)!important;
+      border-color:rgba(255,255,255,.38)!important;
+      color:#fff!important;
+    }
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="select"] input,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-baseweb="select"] svg,
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stFileUploaderDropzone"] button {color:#fff!important;fill:#fff!important;}
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      [data-testid="stExpander"],
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"] hr {
+      border-color:rgba(255,255,255,.3)!important;
+    }
+    .stApp:not(:has(#xray-theme-marker[data-theme="dark"])) [data-testid="stSidebar"]
+      input::placeholder {color:#e0dcff!important;opacity:1;}
     .stApp [data-testid="stVerticalBlockBorderWrapper"] > div {border-radius:16px;}
     .stApp [data-baseweb="select"] > div,
     .stApp [data-baseweb="input"] > div {
@@ -758,7 +809,8 @@ def sidebar_controls(samples: list[Path]) -> dict | None:
             ref_img = load_gray_bytes(uploaded.getvalue())
             img_name = uploaded.name
         else:
-            ref_img = load_gray_file(chosen_sample)
+            stat = chosen_sample.stat()
+            ref_img = load_gray_file(str(chosen_sample), stat.st_mtime_ns, stat.st_size)
             img_name = chosen_sample.name
     except (ValueError, FileNotFoundError) as exc:
         st.error(str(exc))

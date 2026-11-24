@@ -2,10 +2,14 @@ import sys
 from pathlib import Path
 
 import cv2
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
+WARMUP_RUNS = 1
+MEASURED_RUNS = 5
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -85,14 +89,17 @@ def main():
             if ref is None:
                 continue
             noisy = apply_noise(ref, noise_type=n_type, intensity=intensity, seed=42)
-            outputs = run_all_methods(noisy)
-
-            metrics_map = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
-            for m_name, m_res in outputs.items():
-                metrics_map[m_name] = evaluate_enhancement(ref, m_res["image"], m_res["elapsed_ms"])
-
-            for m_name, m_vals in metrics_map.items():
-                rows.append({"Skenario": scen_name, "Citra": path.name, "Metode": m_name, **m_vals})
+            for _ in range(WARMUP_RUNS):
+                run_all_methods(noisy)
+            outputs = None
+            for run_idx in range(1, MEASURED_RUNS + 1):
+                outputs = run_all_methods(noisy)
+                metrics_map = {"Citra Berderau": evaluate_enhancement(ref, noisy, 0.0)}
+                for m_name, m_res in outputs.items():
+                    metrics_map[m_name] = evaluate_enhancement(ref, m_res["image"], m_res["elapsed_ms"])
+                for m_name, m_vals in metrics_map.items():
+                    rows.append({"Skenario": scen_name, "Citra": path.name,
+                                 "Pengulangan": run_idx, "Metode": m_name, **m_vals})
 
             if idx == 0:
                 save_grid(
